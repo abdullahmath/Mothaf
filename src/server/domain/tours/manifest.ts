@@ -39,6 +39,7 @@ import {
 import { directionOf, type AppLocale } from '@/lib/i18n/config';
 import { mergeTranslations, groupByParent } from '../i18n/resolve';
 import { notFound } from '../errors';
+import { CACHE_TAGS, cachedRead } from '../public/cache';
 
 /**
  * Builds everything a visitor needs to run one tour.
@@ -77,7 +78,7 @@ function parseSettings(raw: Record<string, unknown>): TourSettings {
   };
 }
 
-export async function buildTourManifest(request: ManifestRequest): Promise<TourManifest> {
+async function buildTourManifestUncached(request: ManifestRequest): Promise<TourManifest> {
   const db = await getDb();
   const { locale } = request;
 
@@ -449,3 +450,17 @@ export async function buildTourManifest(request: ManifestRequest): Promise<TourM
     events: eventSummaries,
   };
 }
+
+/**
+ * Cached entry point.
+ *
+ * A manifest is the most expensive read in the application — roughly a dozen
+ * queries — and it changes only when an editor publishes, so it is exactly
+ * what a tag-invalidated cache is for.
+ */
+export const buildTourManifest = cachedRead(buildTourManifestUncached, ['tourManifest'], [
+  CACHE_TAGS.tours,
+  CACHE_TAGS.destinations,
+]);
+
+export { buildTourManifestUncached };

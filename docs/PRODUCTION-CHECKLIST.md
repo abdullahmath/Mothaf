@@ -21,7 +21,7 @@ npm run verify
 | Type checking | `npm run typecheck` | ✅ clean, `strict` + `noUncheckedIndexedAccess` |
 | Linting | `npm run lint` | ✅ clean |
 | Tests | `npm test` | ✅ 198 passing |
-| Production build | `npm run build` | See §7 |
+| Production build | `npm run build` | ✅ 19 routes, hermetic (no network, no database) |
 
 ---
 
@@ -80,6 +80,8 @@ must never write.
 - ✅ Rate limiting on login and upload, held in Postgres so it survives replicas
 - ✅ Strict CSP, HSTS, `frame-ancestors 'none'`, `poweredByHeader` off
 - ✅ Analytics carries no cookie and no stable identifier; DNT/GPC honoured server-side
+- ✅ No third-party origin in the CSP and none contacted at runtime — verified
+      in a browser, not merely configured
 
 **Required before launch:**
 
@@ -112,6 +114,11 @@ must never write.
 - ✅ Hotspot positioning is event-driven, not a 60 fps loop
 - ✅ Immutable, year-long cache headers on media; ETag and 304 supported
 - ✅ Byte-range support, so video and audio can seek
+- ✅ Self-hosted typefaces with `unicode-range` subsetting preserved, so an
+      Arabic reader never downloads the Cyrillic slice
+- ✅ 103 kB shared JS; the tour page is 133 kB first load *including* the
+      panorama engine
+- ✅ Verified in-browser: a full page load makes **zero third-party requests**
 
 **Required before launch:**
 
@@ -148,10 +155,12 @@ must never write.
 
 ## 7. Final verification
 
-- [ ] `npm run build` succeeds against the production database driver.
-      **Note:** the build prerenders content pages, so it needs the database
-      reachable. This is standard for Next.js ISR, but it means CI needs a
-      database — use a disposable one.
+- ✅ `npm run build` succeeds with **no database and no network reachable**.
+      Visitor pages render on request and cache at the data layer
+      (`server/domain/public/cache.ts`), rather than prerendering at build, so
+      the build system never needs production database credentials. Typefaces
+      are vendored into `public/fonts`, so the build does not depend on Google
+      Fonts being up — it failed exactly that way once before being fixed.
 - [ ] `npm start` serves, and a visitor can complete a full tour.
 - [ ] Verified by hand in a real browser, in both languages:
   - Home page loads, hero panorama renders and turns

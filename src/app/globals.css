@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* Self-hosted faces. Generated — see scripts/vendor-fonts.mjs. */
+@import './fonts.css';
 
 /* ==========================================================================
    Design tokens
@@ -38,13 +40,26 @@
 
   --color-danger: #e2725b;
 
-  /* Typography. Latin and Arabic display faces are set per-locale on <html>;
-     the UI face covers both scripts so metrics stay consistent when a page
-     mixes them. */
-  --font-display: var(--font-fraunces), 'Fraunces', Georgia, serif;
-  --font-display-ar: var(--font-amiri), 'Amiri', 'Times New Roman', serif;
-  --font-ui: var(--font-plex-arabic), 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
+  /* Typography.
+     --------------------------------------------------------------------
+     Three roles: a display face per script, one UI face covering both (so
+     metrics stay consistent when a page mixes them), and a mono face for
+     bearings, coordinates, dates and counts.
+
+     Amiri rather than the more usual Cairo or Tajawal: it is a naskh face
+     modelled on the Bulaq press types, which belongs to the same scholarly
+     print tradition as the material this platform presents.
+
+     The @font-face rules are vendored into public/fonts and imported above,
+     not loaded through next/font/google. Two reasons: a build must not fail
+     because a third-party CDN is unreachable — which is exactly what happened
+     while building this project — and no visitor request should reach a font
+     host on a site that collects nothing. Regenerate with
+     `node scripts/vendor-fonts.mjs`. */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-display-ar: 'Amiri', 'Times New Roman', serif;
+  --font-ui: 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* A type scale with a ratio of ~1.25, tightened at the display end where
      large text needs less leading and negative tracking. */

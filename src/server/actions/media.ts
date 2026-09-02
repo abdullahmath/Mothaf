@@ -1,7 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { assertSameOrigin } from '../auth/cookies';
+import { CACHE_TAGS } from '../domain/public/cache';
 import { isDomainError } from '../domain/errors';
 import { removeMedia, updateMediaText, uploadMedia } from '../domain/admin/media';
 import {
@@ -74,6 +75,7 @@ export async function updateMediaTextAction(
 
   try {
     await updateMediaText(id, parseTranslationFields(formData, MEDIA_TRANSLATION_FIELDS, LOCALES));
+    revalidateTag(CACHE_TAGS.content);
     revalidatePath(`/${locale}/admin/media`);
     revalidatePath(`/${locale}`, 'layout');
     return { ok: true, message: 'Saved.' };

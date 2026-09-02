@@ -7,9 +7,10 @@ import { TourViewer } from '@/components/tour/TourViewer';
 
 type Params = Promise<{ locale: string; destination: string; tour: string }>;
 
-// The manifest is regenerated on publish; a short window keeps an edit from
-// lingering without making every visitor pay for a cold query.
-export const revalidate = 120;
+// Rendered on request, with the underlying queries served from the data
+// cache (see server/domain/public/cache.ts). Prerendering these at build
+// time would make `next build` require the production database.
+export const dynamic = 'force-dynamic';
 
 async function load(params: Params) {
   const { locale, destination, tour } = await params;

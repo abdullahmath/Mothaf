@@ -10,7 +10,9 @@ import {
   makeScene,
   makeTour,
 } from '../helpers/fixtures';
-import { buildTourManifest } from '@/server/domain/tours/manifest';
+// The uncached entry point: these tests are about what the query returns,
+// and a cache between them and the database would mask a stale result.
+import { buildTourManifestUncached as buildTourManifest } from '@/server/domain/tours/manifest';
 import { isDomainError } from '@/server/domain/errors';
 
 /**

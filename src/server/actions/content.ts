@@ -1,8 +1,9 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { assertSameOrigin } from '../auth/cookies';
+import { CACHE_TAGS } from '../domain/public/cache';
 import { isDomainError } from '../domain/errors';
 import {
   createDestination,
@@ -73,8 +74,13 @@ function toResult(error: unknown): ActionResult {
  * Deliberately broad. Getting this wrong means an editor publishes something
  * and cannot see it, then publishes again — over-invalidating costs a render,
  * under-invalidating costs their trust in the tool.
+ *
+ * Tags do the real work: visitor reads are cached at the data layer, so
+ * clearing `content` drops exactly the query results a publish could have
+ * changed. `revalidatePath` additionally clears the rendered output.
  */
 function revalidateContent(locale: string, paths: string[] = []): void {
+  revalidateTag(CACHE_TAGS.content);
   revalidatePath(`/${locale}`, 'layout');
   for (const path of paths) revalidatePath(path);
 }

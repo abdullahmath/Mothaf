@@ -7,7 +7,10 @@ import { isDomainError } from '@/server/domain/errors';
 import { EventCard } from '@/components/content/EventCard';
 import { buildSrcSet } from '@/lib/media/srcset';
 
-export const revalidate = 300;
+// Rendered on request, with the underlying queries served from the data
+// cache (see server/domain/public/cache.ts). Prerendering these at build
+// time would make `next build` require the production database.
+export const dynamic = 'force-dynamic';
 
 type Params = Promise<{ locale: string; destination: string }>;
 

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import '../globals.css';
-import { fontVariables } from '@/lib/fonts';
 import { LOCALES, directionOf, getTranslator, isAppLocale } from '@/lib/i18n';
 
 /**
@@ -66,7 +65,7 @@ export default async function LocaleLayout({
   if (!isAppLocale(locale)) notFound();
 
   return (
-    <html lang={locale} dir={directionOf(locale)} className={fontVariables}>
+    <html lang={locale} dir={directionOf(locale)}>
       <body>{children}</body>
     </html>
   );

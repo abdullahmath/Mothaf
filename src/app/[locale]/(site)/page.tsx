@@ -8,10 +8,10 @@ import { HeroPanorama } from '@/components/home/HeroPanorama';
 import { DestinationCard } from '@/components/content/DestinationCard';
 import { EventCard } from '@/components/content/EventCard';
 
-// Content changes only when an editor publishes, so the page is rendered on
-// demand and cached. A short window keeps a newly published destination from
-// taking an hour to appear.
-export const revalidate = 300;
+// Rendered on request, with the underlying queries served from the data
+// cache (see server/domain/public/cache.ts). Prerendering these at build
+// time would make `next build` require the production database.
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;

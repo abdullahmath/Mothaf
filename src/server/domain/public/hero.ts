@@ -13,6 +13,7 @@ import { toMediaDTO } from '../../media/urls';
 import type { MediaDTO } from '@/lib/tour/types';
 import type { AppLocale } from '@/lib/i18n/config';
 import { mergeTranslations } from '../i18n/resolve';
+import { CACHE_TAGS, cachedRead } from './cache';
 
 /**
  * Picks the panorama for the home page hero.
@@ -22,7 +23,7 @@ import { mergeTranslations } from '../i18n/resolve';
  * `featured` flag keeps one fewer piece of state for someone to forget to
  * update — the destination an editor put first is the one they want first.
  */
-export async function getHeroScene(locale: AppLocale): Promise<{
+async function getHeroSceneUncached(locale: AppLocale): Promise<{
   media: MediaDTO;
   destinationSlug: string;
   tourSlug: string;
@@ -66,3 +67,8 @@ export async function getHeroScene(locale: AppLocale): Promise<{
     tourSlug: row.tourSlug,
   };
 }
+
+export const getHeroScene = cachedRead(getHeroSceneUncached, ['getHeroScene'], [
+  CACHE_TAGS.destinations,
+  CACHE_TAGS.tours,
+]);

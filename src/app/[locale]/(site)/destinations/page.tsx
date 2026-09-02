@@ -4,7 +4,10 @@ import { getTranslator, isAppLocale, type AppLocale } from '@/lib/i18n';
 import { listDestinations } from '@/server/domain/public/destinations';
 import { DestinationCard } from '@/components/content/DestinationCard';
 
-export const revalidate = 300;
+// Rendered on request, with the underlying queries served from the data
+// cache (see server/domain/public/cache.ts). Prerendering these at build
+// time would make `next build` require the production database.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,

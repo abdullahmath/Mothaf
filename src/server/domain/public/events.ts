@@ -27,6 +27,7 @@ import {
 import type { AppLocale } from '@/lib/i18n/config';
 import { groupByParent, mergeTranslations } from '../i18n/resolve';
 import { notFound } from '../errors';
+import { CACHE_TAGS, cachedRead } from './cache';
 
 /**
  * Visitor-side reads for events and festivals.
@@ -156,7 +157,7 @@ export async function listEventsForDestination(
  * excluded from the default listing — a visitor looking for what is on does
  * not want last year's festival at the top.
  */
-export async function listUpcomingEvents(
+async function listUpcomingEventsUncached(
   locale: AppLocale,
   limit = 12,
   now = new Date(),
@@ -186,7 +187,7 @@ export async function listUpcomingEvents(
   return toCards(eventRows, locale, rows[0]?.destinationDefaultLocale ?? locale, labels, now);
 }
 
-export async function listPastEvents(
+async function listPastEventsUncached(
   locale: AppLocale,
   limit = 12,
   now = new Date(),
@@ -205,7 +206,7 @@ export async function listPastEvents(
   return toCards(past, locale, rows[0]?.destinationDefaultLocale ?? locale, labels, now);
 }
 
-export async function getEventDetail(
+async function getEventDetailUncached(
   destinationSlug: string,
   eventSlug: string,
   locale: AppLocale,
@@ -320,3 +321,24 @@ export async function getEventDetail(
     phase: eventPhase(event.startsAt, event.endsAt, now),
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Cached entry points                                                       */
+/* -------------------------------------------------------------------------- */
+
+// `now` is deliberately excluded from the cache key: it changes every call and
+// would make every entry a miss. The five-minute ceiling bounds how stale a
+// phase label ("on now" / "upcoming") can be, which is well inside the
+// resolution anyone reads an event listing at.
+export const listUpcomingEvents = cachedRead(listUpcomingEventsUncached, ['listUpcomingEvents'], [
+  CACHE_TAGS.events,
+]);
+
+export const listPastEvents = cachedRead(listPastEventsUncached, ['listPastEvents'], [
+  CACHE_TAGS.events,
+]);
+
+export const getEventDetail = cachedRead(getEventDetailUncached, ['getEventDetail'], [
+  CACHE_TAGS.events,
+  CACHE_TAGS.tours,
+]);

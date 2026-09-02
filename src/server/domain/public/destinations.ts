@@ -27,6 +27,7 @@ import type {
 import type { AppLocale } from '@/lib/i18n/config';
 import { groupByParent, mergeTranslations } from '../i18n/resolve';
 import { notFound } from '../errors';
+import { CACHE_TAGS, cachedRead } from './cache';
 import { listEventsForDestination } from './events';
 
 /**
@@ -64,7 +65,7 @@ async function loadMedia(
   return map;
 }
 
-export async function listDestinations(locale: AppLocale): Promise<DestinationCardDTO[]> {
+async function listDestinationsUncached(locale: AppLocale): Promise<DestinationCardDTO[]> {
   const db = await getDb();
 
   const rows = await db
@@ -129,7 +130,7 @@ export async function listDestinations(locale: AppLocale): Promise<DestinationCa
   });
 }
 
-export async function getDestinationPage(
+async function getDestinationPageUncached(
   slug: string,
   locale: AppLocale,
 ): Promise<DestinationPageDTO> {
@@ -309,3 +310,17 @@ export async function countPublishedDestinations(): Promise<number> {
 }
 
 export { sql };
+
+/* -------------------------------------------------------------------------- */
+/*  Cached entry points                                                       */
+/* -------------------------------------------------------------------------- */
+
+export const listDestinations = cachedRead(listDestinationsUncached, ['listDestinations'], [
+  CACHE_TAGS.destinations,
+]);
+
+export const getDestinationPage = cachedRead(
+  getDestinationPageUncached,
+  ['getDestinationPage'],
+  [CACHE_TAGS.destinations, CACHE_TAGS.tours, CACHE_TAGS.events],
+);
