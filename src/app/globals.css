@@ -522,6 +522,136 @@ body {
   --sheet-from: -100%;
 }
 
+/* ==========================================================================
+   Admin
+   --------------------------------------------------------------------------
+   The admin shares the visitor palette rather than adopting a separate "app"
+   theme. An editor moves between the console and the live tour constantly,
+   and two visual languages would make previewing feel like leaving the tool.
+   What changes is density: tighter type, more rules, less air.
+   ========================================================================== */
+
+.admin-input,
+.admin-textarea,
+.admin-select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: var(--color-ink-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-lime);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+
+.admin-input:hover,
+.admin-textarea:hover,
+.admin-select:hover {
+  border-color: color-mix(in oklab, var(--color-lime) 22%, transparent);
+}
+
+.admin-input:focus,
+.admin-textarea:focus,
+.admin-select:focus {
+  border-color: var(--color-verdigris);
+  outline-offset: 1px;
+}
+
+.admin-textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.admin-input[aria-invalid='true'],
+.admin-textarea[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.admin-field-error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+}
+
+/* Latin-only values — slugs, hex colours, coordinates, ids — stay LTR even in
+   an Arabic interface, because they are not Arabic text and reversing them
+   makes them unreadable. */
+.admin-input[data-latin='true'] {
+  direction: ltr;
+  text-align: start;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.admin-table th {
+  text-align: start;
+  font-weight: 500;
+  color: var(--color-lime-faint);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 0.75rem 0.6rem;
+}
+
+[dir='rtl'] .admin-table th {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.admin-table td {
+  padding: 0.75rem;
+  border-top: 1px solid var(--hairline);
+  vertical-align: middle;
+}
+
+.admin-table tbody tr:hover {
+  background: color-mix(in oklab, var(--color-lime) 3%, transparent);
+}
+
+/* Status is scanned, not read — colour carries it, and the text confirms it. */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-2xs);
+  border: 1px solid currentColor;
+}
+
+.status-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-pill[data-status='published'] { color: var(--color-verdigris); }
+.status-pill[data-status='draft'] { color: var(--color-saffron); }
+.status-pill[data-status='archived'] { color: var(--color-lime-faint); }
+
+/* Coverage bar for the translation view. */
+.coverage {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-lime) 12%, transparent);
+  overflow: hidden;
+}
+
+.coverage > span {
+  display: block;
+  height: 100%;
+  background: var(--color-verdigris);
+}
+
 /* Field of view is a real quantity in this product; show it as one. */
 .readout {
   font-family: var(--font-mono);
