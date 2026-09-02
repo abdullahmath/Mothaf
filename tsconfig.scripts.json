@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      // Only for scripts run directly by Node. The app build keeps the real
+      // package, so an accidental server import in a client component still
+      // fails loudly.
+      "server-only": ["./scripts/server-only.noop.ts"]
+    }
+  }
+}

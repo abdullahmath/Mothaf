@@ -84,20 +84,40 @@ export function getCatalog(locale: AppLocale): Catalog {
 /*  Formatters                                                                */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Numbers use Latin digits even in Arabic.
- *
- * Arabic-Indic digits are authentic, but counts and analytics figures sit
- * beside Latin-digit content throughout the admin, and mixing the two numeral
- * systems in one view reads as a bug rather than as a choice. Dates keep the
- * locale's own month and weekday names.
- */
-function numberTag(locale: AppLocale): string {
-  return locale === 'ar' ? 'ar-u-nu-latn' : LOCALE_META[locale].intlTag;
+/** The tag `Intl` should use for this locale. See LOCALE_META for the why. */
+function intlTag(locale: AppLocale): string {
+  return LOCALE_META[locale].intlTag;
 }
 
 export function formatNumber(locale: AppLocale, value: number): string {
-  return new Intl.NumberFormat(numberTag(locale)).format(value);
+  return new Intl.NumberFormat(intlTag(locale)).format(value);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Counted nouns                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Formats "N somethings" using the locale's own plural rules.
+ *
+ * This is not a nicety in an Arabic-first product. English has two forms;
+ * Arabic has six, and it distinguishes a dual (جولتان, "two tours") that has
+ * no English counterpart. Concatenating a number with a fixed noun — the usual
+ * shortcut — produces text that is simply ungrammatical in Arabic for most
+ * values, which on a cultural institution's own site is not a small thing.
+ *
+ * `Intl.PluralRules` picks the category; the catalogue supplies the wording
+ * for each one. Categories a language does not use are just absent from its
+ * catalogue, and `other` is the guaranteed fallback.
+ */
+export type CountKey = keyof typeof en.counts;
+
+export function formatCount(locale: AppLocale, key: CountKey, count: number): string {
+  const catalog = CATALOGS[locale] ?? CATALOGS[DEFAULT_LOCALE];
+  const forms = catalog.counts[key] as Partial<Record<Intl.LDMLPluralRule, string>>;
+  const category = new Intl.PluralRules(intlTag(locale)).select(count);
+  const template = forms[category] ?? forms.other ?? '{count}';
+  return interpolate(template, { count: formatNumber(locale, count) });
 }
 
 export function formatDate(
@@ -107,7 +127,7 @@ export function formatDate(
 ): string {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat(numberTag(locale), options).format(date);
+  return new Intl.DateTimeFormat(intlTag(locale), options).format(date);
 }
 
 /** Formats a date range, collapsing a single-day range to one date. */
@@ -121,7 +141,7 @@ export function formatDateRange(
   const to = end instanceof Date ? end : new Date(end);
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return '';
 
-  const formatter = new Intl.DateTimeFormat(numberTag(locale), {
+  const formatter = new Intl.DateTimeFormat(intlTag(locale), {
     dateStyle: 'long',
     ...(timeZone ? { timeZone } : {}),
   });
@@ -138,7 +158,7 @@ export function formatTime(
 ): string {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat(numberTag(locale), {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     hour: '2-digit',
     minute: '2-digit',
     ...(timeZone ? { timeZone } : {}),

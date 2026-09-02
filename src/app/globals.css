@@ -1,0 +1,531 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Design tokens
+   --------------------------------------------------------------------------
+   The palette is drawn from the material of the subject rather than from the
+   usual "heritage" register of cream and terracotta. The theatre at Jableh is
+   built of dark volcanic basalt on the Mediterranean coast, so the surfaces
+   are basalt with a blue-green cast, the text is limestone, and the
+   interactive colour is the verdigris of oxidised bronze.
+
+   Dark is also the functionally correct choice: the panorama is the brightest
+   thing on screen and the chrome must recede around it, which is exactly how
+   a gallery lights an object.
+   ========================================================================== */
+
+@theme {
+  /* Surfaces, darkest to lightest */
+  --color-ink: #0b1113;
+  --color-ink-raised: #101819;
+  --color-stone: #16201f;
+  --color-stone-2: #22302e;
+  --color-stone-3: #33433f;
+
+  /* Text */
+  --color-lime: #e8e4d9;
+  --color-lime-dim: #a8ada4;
+  --color-lime-faint: #6e766f;
+
+  /* Interactive — oxidised bronze */
+  --color-verdigris: #4fb3a0;
+  --color-verdigris-bright: #6ed3bd;
+  --color-verdigris-deep: #2b6f62;
+
+  /* Reserved for time-bound content: events, festivals, "on now" */
+  --color-saffron: #e0a03c;
+  --color-saffron-deep: #8a5f1c;
+
+  --color-danger: #e2725b;
+
+  /* Typography. Latin and Arabic display faces are set per-locale on <html>;
+     the UI face covers both scripts so metrics stay consistent when a page
+     mixes them. */
+  --font-display: var(--font-fraunces), 'Fraunces', Georgia, serif;
+  --font-display-ar: var(--font-amiri), 'Amiri', 'Times New Roman', serif;
+  --font-ui: var(--font-plex-arabic), 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* A type scale with a ratio of ~1.25, tightened at the display end where
+     large text needs less leading and negative tracking. */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+  --text-5xl: 4rem;
+  --text-6xl: 5.5rem;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  --shadow-panel: 0 24px 60px -20px rgb(0 0 0 / 0.7);
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  --rail-tick: color-mix(in oklab, var(--color-lime) 26%, transparent);
+  --hairline: color-mix(in oklab, var(--color-lime) 12%, transparent);
+}
+
+html {
+  background: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-lime);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-wrap: break-word;
+}
+
+/* The display face follows the script, not the element. Arabic gets Amiri;
+   everything else gets Fraunces. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+[lang='ar'] .display,
+[dir='rtl'] .display {
+  font-family: var(--font-display-ar);
+  /* Amiri's ascenders and diacritics need more room than a Latin face, and
+     Arabic does not take negative tracking. */
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* An eyebrow labels the section it sits above. In Arabic, letter-spacing
+   breaks the cursive join, so it is removed rather than mirrored. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-lime-faint);
+}
+
+[dir='rtl'] .eyebrow {
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+}
+
+/* ==========================================================================
+   Accessibility floor
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--color-verdigris-bright);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* Removing the default outline is only safe because :focus-visible above
+   always replaces it. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  transform: translateY(-120%);
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--color-verdigris);
+  color: var(--color-ink);
+  font-weight: 600;
+  transition: transform 0.15s var(--ease-out-quart);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   The bearing rail — the signature element
+   --------------------------------------------------------------------------
+   A theodolite scale. It reports the direction you are facing and marks where
+   the points of interest lie relative to you, so "there is something behind
+   me and I should turn right" is legible at a glance. It is structural: the
+   ticks encode angles, they are not ornament.
+   ========================================================================== */
+
+.rail {
+  position: relative;
+  height: 42px;
+  overflow: hidden;
+  user-select: none;
+  /* Fades at both ends so the scale reads as a window onto a continuous
+     circle rather than a bar with a start and an end. */
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+
+/* The rail always runs west-to-east regardless of text direction. Compass
+   bearings are not a reading order, and mirroring them would make the compass
+   wrong in Arabic. */
+.rail-track {
+  position: absolute;
+  inset: 0;
+  direction: ltr;
+}
+
+.rail-tick {
+  position: absolute;
+  inset-block-start: 50%;
+  width: 1px;
+  background: var(--rail-tick);
+  transform: translateX(-50%);
+}
+
+.rail-tick[data-major='true'] {
+  height: 12px;
+  background: color-mix(in oklab, var(--color-lime) 45%, transparent);
+}
+
+.rail-tick[data-major='false'] {
+  height: 6px;
+}
+
+.rail-label {
+  position: absolute;
+  inset-block-start: 2px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-lime-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A hotspot's bearing, projected onto the scale. */
+.rail-marker {
+  position: absolute;
+  inset-block-end: 4px;
+  width: 7px;
+  height: 7px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--color-verdigris);
+  transition: background 0.2s;
+}
+
+.rail-marker[data-kind='event'] {
+  background: var(--color-saffron);
+}
+
+/* Centre index: the direction you are actually facing. */
+.rail-index {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 50%;
+  width: 1px;
+  background: var(--color-verdigris-bright);
+  transform: translateX(-50%);
+}
+
+.rail-index::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-inline: 5px solid transparent;
+  border-block-start: 6px solid var(--color-verdigris-bright);
+}
+
+/* ==========================================================================
+   Hotspots
+   ========================================================================== */
+
+.hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--color-lime);
+  cursor: pointer;
+  padding: 0;
+}
+
+.hotspot-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-lime);
+  background: color-mix(in oklab, var(--color-ink) 55%, transparent);
+  backdrop-filter: blur(3px);
+  transition:
+    transform 0.18s var(--ease-out-quart),
+    border-color 0.18s,
+    background 0.18s;
+}
+
+.hotspot:hover .hotspot-dot,
+.hotspot:focus-visible .hotspot-dot {
+  transform: scale(1.25);
+  border-color: var(--color-verdigris-bright);
+  background: color-mix(in oklab, var(--color-verdigris) 35%, transparent);
+}
+
+/* Navigation hotspots read as a direction to travel, not a thing to inspect,
+   so they are a chevron rather than a dot. */
+.hotspot[data-style='arrow'] .hotspot-dot {
+  border-radius: var(--radius-sm);
+  transform: rotate(45deg);
+  width: 16px;
+  height: 16px;
+}
+
+.hotspot[data-style='arrow']:hover .hotspot-dot,
+.hotspot[data-style='arrow']:focus-visible .hotspot-dot {
+  transform: rotate(45deg) scale(1.25);
+}
+
+.hotspot-label {
+  position: absolute;
+  inset-block-start: calc(100% - 4px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  padding: 0.2rem 0.5rem;
+  background: color-mix(in oklab, var(--color-ink) 80%, transparent);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
+}
+
+.hotspot:hover .hotspot-label,
+.hotspot:focus-visible .hotspot-label,
+.hotspot[data-labels='always'] .hotspot-label {
+  opacity: 1;
+}
+
+/* The pulse is an affordance: it says "this is live and can be pressed".
+   Suppressed under reduced-motion, where the border alone carries the job. */
+.hotspot[data-style='pulse'] .hotspot-dot::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-verdigris);
+  animation: hotspot-pulse 2.8s ease-out infinite;
+}
+
+@keyframes hotspot-pulse {
+  0% { transform: scale(0.7); opacity: 0.9; }
+  70% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* ==========================================================================
+   Panels and surfaces
+   ========================================================================== */
+
+.panel {
+  background: color-mix(in oklab, var(--color-stone) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-panel);
+}
+
+.hairline {
+  border-color: var(--hairline);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline);
+  font-size: var(--text-xs);
+  color: var(--color-lime-dim);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding-inline: 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    color 0.18s;
+}
+
+.btn-primary {
+  background: var(--color-verdigris);
+  color: var(--color-ink);
+}
+
+.btn-primary:hover {
+  background: var(--color-verdigris-bright);
+}
+
+.btn-quiet {
+  background: transparent;
+  border-color: var(--hairline);
+  color: var(--color-lime);
+}
+
+.btn-quiet:hover {
+  border-color: var(--color-verdigris);
+  color: var(--color-verdigris-bright);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Long-form content coming from the database. */
+.prose-body {
+  font-size: var(--text-base);
+  line-height: 1.75;
+  color: var(--color-lime-dim);
+}
+
+.prose-body p + p {
+  margin-block-start: 1em;
+}
+
+[dir='rtl'] .prose-body {
+  line-height: 1.95; /* Arabic needs more leading at the same size. */
+}
+
+/* ==========================================================================
+   Tour panel
+   --------------------------------------------------------------------------
+   A native <dialog>, so focus containment, Escape and aria-modal come from the
+   platform. Positioned as an inline-end sheet on wide screens and a bottom
+   sheet on narrow ones. The backdrop darkens rather than hides: keeping the
+   scene visible behind the panel is what stops the visitor losing their place.
+   ========================================================================== */
+
+.tour-panel {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  max-width: none;
+  max-height: none;
+  color: var(--color-lime);
+  /* `dialog` is display:none until opened; the modal sets it back. */
+  position: fixed;
+  inset: auto 0 0 0;
+  width: 100%;
+  height: min(72dvh, 640px);
+  border-start-start-radius: var(--radius-lg);
+  border-start-end-radius: var(--radius-lg);
+  animation: sheet-up 0.28s var(--ease-out-quart);
+}
+
+.tour-panel::backdrop {
+  background: color-mix(in oklab, #000 55%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+@media (min-width: 768px) {
+  .tour-panel {
+    inset-block: 0;
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    width: min(30rem, 42vw);
+    height: 100dvh;
+    border-radius: 0;
+    border-inline-start: 1px solid var(--hairline);
+    animation: sheet-in 0.28s var(--ease-out-quart);
+  }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Slides from the inline-end edge, which is the left in Arabic and the right
+   in English — the sheet enters from the side it is anchored to in both. */
+@keyframes sheet-in {
+  from { transform: translateX(var(--sheet-from, 100%)); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+[dir='rtl'] .tour-panel {
+  --sheet-from: -100%;
+}
+
+/* Field of view is a real quantity in this product; show it as one. */
+.readout {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-lime-faint);
+}

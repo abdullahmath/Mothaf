@@ -92,8 +92,21 @@ export type PanoramaOptions = {
   /** Disables inertia and auto-rotation for `prefers-reduced-motion`. */
   reducedMotion?: boolean;
   onCameraChange?: (camera: PanoramaCamera) => void;
+  /**
+   * Fired when the viewport size changes. Together with `onCameraChange` this
+   * covers every input to the projection matrix, which is what lets an overlay
+   * reposition on change instead of polling every frame.
+   */
+  onResize?: (size: { width: number; height: number }) => void;
   onReady?: () => void;
   onError?: (error: Error) => void;
+  /**
+   * Fired after the GPU context was lost and rebuilt. Textures do not survive,
+   * so the consumer must load them again — the engine deliberately does not
+   * retain the decoded bitmaps, which for a 4096×2048 panorama would mean
+   * holding ~32 MB against a failure that may never come.
+   */
+  onContextRestored?: () => void;
 };
 
 const DEFAULT_LIMITS: PanoramaLimits = {
@@ -152,6 +165,7 @@ export class PanoramaEngine {
   private frame: number | null = null;
   private disposed = false;
   private needsRender = true;
+  private contextLost = false;
   private resizeObserver: ResizeObserver | null = null;
 
   private viewProjection: Mat4 = perspective(75 * DEG, 1, 0.1, 100);
@@ -180,10 +194,48 @@ export class PanoramaEngine {
     this.setCamera({ ...this.camera, ...options.camera }, { silent: true });
     this.initialise();
     this.attachInput();
+    this.attachContextRecovery();
     this.observeSize();
     this.resize();
     this.start();
   }
+
+  /**
+   * Survives a lost GPU context.
+   *
+   * Contexts are lost in the wild — a driver reset, a phone reclaiming memory
+   * when the tab is backgrounded, too many live contexts on the page. Without
+   * this the canvas would go black permanently and the only cure would be a
+   * page reload. Calling `preventDefault` on the loss event is what tells the
+   * browser we intend to recover, and is required before it will restore.
+   */
+  private attachContextRecovery(): void {
+    this.canvas.addEventListener('webglcontextlost', this.onContextLost);
+    this.canvas.addEventListener('webglcontextrestored', this.onContextRestored);
+  }
+
+  private onContextLost = (event: Event): void => {
+    event.preventDefault();
+    this.contextLost = true;
+    if (this.frame !== null) {
+      cancelAnimationFrame(this.frame);
+      this.frame = null;
+    }
+  };
+
+  private onContextRestored = (): void => {
+    if (this.disposed) return;
+    this.contextLost = false;
+    // Every GL object was destroyed with the context; rebuild from scratch.
+    this.program = null;
+    this.mixCurrent = 0;
+    this.mixTarget = 0;
+    this.initialise();
+    this.resize();
+    this.needsRender = true;
+    this.start();
+    this.options.onContextRestored?.();
+  };
 
   /**
    * Tracks the canvas's own box rather than trusting the caller to call
@@ -361,12 +413,12 @@ export class PanoramaEngine {
 
   private uploadImage(texture: WebGLTexture, source: TexImageSource): void {
     const { gl } = this;
+    const width = 'width' in source ? Number(source.width) : 0;
+    const height = 'height' in source ? Number(source.height) : 0;
+
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-
-    const width = 'width' in source ? Number(source.width) : 0;
-    const height = 'height' in source ? Number(source.height) : 0;
     const isPowerOfTwo = (n: number) => n > 0 && (n & (n - 1)) === 0;
     const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
 
@@ -374,6 +426,13 @@ export class PanoramaEngine {
     if (isWebGL2 || (isPowerOfTwo(width) && isPowerOfTwo(height))) {
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    }
+
+    // The pixels now live on the GPU. A decoded 4096×2048 bitmap is roughly
+    // 32 MB of client memory, which on a phone is worth releasing the moment
+    // it is redundant rather than at the next garbage collection.
+    if (typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap) {
+      source.close();
     }
   }
 
@@ -420,6 +479,12 @@ export class PanoramaEngine {
     this.camera = { yaw, pitch, fov };
 
     if (changed) {
+      // Refresh the matrix here rather than only in `render()`. `project()`
+      // reads it, and a consumer that repositions an overlay in response to
+      // `onCameraChange` would otherwise be projecting against the *previous*
+      // frame's camera — markers would trail the scene by one frame while
+      // dragging, and be wrong outright if no frame ran at all.
+      this.updateMatrices();
       this.needsRender = true;
       if (!options.silent) this.options.onCameraChange?.(this.getCamera());
     }
@@ -646,6 +711,7 @@ export class PanoramaEngine {
     const width = Math.max(1, Math.round(measured.width));
     const height = Math.max(1, Math.round(measured.height));
 
+    const changed = width !== this.viewportWidth || height !== this.viewportHeight;
     this.viewportWidth = width;
     this.viewportHeight = height;
 
@@ -658,6 +724,12 @@ export class PanoramaEngine {
     }
     gl.viewport(0, 0, bufferWidth, bufferHeight);
     this.needsRender = true;
+
+    // Recomputed here, not only in the render loop, so that a consumer can
+    // reposition an overlay without waiting for a frame — which matters when
+    // requestAnimationFrame is throttled, as it is in a background tab.
+    this.updateMatrices();
+    if (changed) this.options.onResize?.({ width, height });
   }
 
   private updateMatrices(): void {
@@ -710,7 +782,7 @@ export class PanoramaEngine {
   }
 
   private tick = (): void => {
-    if (this.disposed) return;
+    if (this.disposed || this.contextLost) return;
 
     const idleFor = performance.now() - this.lastInteractionAt;
 
@@ -757,22 +829,32 @@ export class PanoramaEngine {
     this.disposed = true;
     if (this.frame !== null) cancelAnimationFrame(this.frame);
     this.detachInput();
+    this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
+    this.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     window.removeEventListener('resize', this.onWindowResize);
 
+    // Release the GPU memory we allocated. The context itself is deliberately
+    // left alone.
+    //
+    // Calling WEBGL_lose_context.loseContext() here looks like tidy
+    // housekeeping and is actively harmful: a canvas element outlives the
+    // component that drew on it, `getContext` hands back the same *lost*
+    // context object, and the next engine built on that canvas fails at
+    // `createShader` and renders nothing, permanently. React remounts on the
+    // same node routinely — StrictMode does it on every mount in development.
+    // A context belonging to a discarded canvas is reclaimed by the browser on
+    // its own.
     const { gl } = this;
+    if (gl.isContextLost()) return;
+
     if (this.program) gl.deleteProgram(this.program);
     if (this.positionBuffer) gl.deleteBuffer(this.positionBuffer);
     if (this.uvBuffer) gl.deleteBuffer(this.uvBuffer);
     if (this.indexBuffer) gl.deleteBuffer(this.indexBuffer);
     if (this.previewTexture) gl.deleteTexture(this.previewTexture);
     if (this.mainTexture) gl.deleteTexture(this.mainTexture);
-
-    // Free the GPU context immediately rather than waiting for GC; browsers
-    // cap the number of live WebGL contexts, and a tour switching scenes
-    // repeatedly would otherwise hit that ceiling.
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
   }
 }
 

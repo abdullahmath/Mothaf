@@ -25,9 +25,7 @@ import { env } from '../config/env';
 export type Database = PostgresJsDatabase<typeof schema>;
 
 declare global {
-  // eslint-disable-next-line no-var
   var __mothafDb: Database | undefined;
-  // eslint-disable-next-line no-var
   var __mothafSql: postgres.Sql | undefined;
 }
 

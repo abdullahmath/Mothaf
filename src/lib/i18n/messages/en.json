@@ -37,9 +37,7 @@
     "aboutTitle": "About",
     "historyTitle": "History",
     "locationTitle": "Location",
-    "startTour": "Start the tour",
-    "sceneCount": "{count} scenes",
-    "estimatedTime": "About {minutes} min"
+    "startTour": "Start the tour"
   },
   "tour": {
     "enter": "Enter the tour",
@@ -180,5 +178,31 @@
     "dialog": "Dialogue",
     "closeDialog": "Close dialogue",
     "reducedMotionNote": "Motion is reduced according to your system preference."
+  },
+  "nav": {
+    "destinations": "Destinations",
+    "events": "What's on"
+  },
+  "counts": {
+    "tours": {
+      "one": "1 tour",
+      "other": "{count} tours"
+    },
+    "scenes": {
+      "one": "1 scene",
+      "other": "{count} scenes"
+    },
+    "pois": {
+      "one": "1 point of interest",
+      "other": "{count} points of interest"
+    },
+    "minutes": {
+      "one": "about 1 min",
+      "other": "about {count} min"
+    },
+    "events": {
+      "one": "1 event",
+      "other": "{count} events"
+    }
   }
 }

@@ -24,7 +24,21 @@ type LocaleMeta = {
   nativeName: string;
   englishName: string;
   direction: Direction;
-  /** Passed to Intl for dates and numbers. */
+  /**
+   * The tag handed to `Intl` for dates, numbers and plural rules.
+   *
+   * It is not simply the language code, and both deviations are deliberate:
+   *
+   * - **`ar-SY`** — month names differ across the Arabic-speaking world. Plain
+   *   `ar` yields the Egyptian/Gulf forms (سبتمبر), while the Levant uses
+   *   أيلول. A platform whose first destination is in Syria should print the
+   *   month the way people there write it. This is the single line to change
+   *   for a deployment centred on another region.
+   *
+   * - **`-u-nu-latn`** — Latin digits rather than Arabic-Indic. Counts and
+   *   dates sit beside Latin-digit content throughout the admin, and mixing
+   *   two numeral systems in one view reads as a defect rather than a choice.
+   */
   intlTag: string;
 };
 
@@ -34,7 +48,7 @@ export const LOCALE_META: Record<AppLocale, LocaleMeta> = {
     nativeName: 'العربية',
     englishName: 'Arabic',
     direction: 'rtl',
-    intlTag: 'ar',
+    intlTag: 'ar-SY-u-nu-latn',
   },
   en: {
     code: 'en',

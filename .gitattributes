@@ -1,0 +1,14 @@
+# Normalise line endings so the repository is identical on Windows and Linux
+# and diffs never turn into whole-file rewrites.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.mp4 binary
+*.webm binary
+*.mp3 binary
+*.woff binary
+*.woff2 binary

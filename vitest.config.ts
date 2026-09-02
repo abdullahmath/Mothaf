@@ -5,9 +5,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // `server-only` throws when bundled for the client. Under Vitest we are
-      // always on the server, so it is stubbed out.
-      'server-only': path.resolve(__dirname, './tests/stubs/server-only.ts'),
+      // `server-only` throws on import outside a bundler. Under Vitest we are
+      // always on the server, so it is aliased to the shared no-op.
+      'server-only': path.resolve(__dirname, './scripts/server-only.noop.ts'),
     },
   },
   test: {

@@ -2,7 +2,13 @@ import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { assertSafeKey, type ObjectMeta, type StorageDriver, type StoredObject } from './types';
+import {
+  assertSafeKey,
+  type ByteRange,
+  type ObjectMeta,
+  type StorageDriver,
+  type StoredObject,
+} from './types';
 
 /**
  * Filesystem storage.
@@ -42,7 +48,7 @@ export class LocalStorageDriver implements StorageDriver {
     await writeFile(full, body, { mode: 0o644 });
   }
 
-  async get(key: string): Promise<StoredObject | null> {
+  async get(key: string, range?: ByteRange): Promise<StoredObject | null> {
     const full = this.resolve(key);
     let info;
     try {
@@ -52,17 +58,31 @@ export class LocalStorageDriver implements StorageDriver {
     }
     if (!info.isFile()) return null;
 
-    // Weak-ish but stable validator derived from size and mtime; enough for
-    // conditional requests on immutable derivatives.
+    // Stable validator derived from size and mtime; enough for conditional
+    // requests on derivatives, which are immutable once written.
     const etag = createHash('sha1')
       .update(`${info.size}:${info.mtimeMs}:${key}`)
       .digest('hex');
+
+    if (range) {
+      const start = Math.max(0, range.start);
+      const end = Math.min(info.size - 1, range.end);
+      if (start > end) return null;
+      return {
+        stream: createReadStream(full, { start, end }),
+        contentType: 'application/octet-stream',
+        contentLength: end - start + 1,
+        totalLength: info.size,
+        etag,
+      };
+    }
 
     return {
       stream: createReadStream(full),
       // The caller supplies the authoritative content type from the database.
       contentType: 'application/octet-stream',
       contentLength: info.size,
+      totalLength: info.size,
       etag,
     };
   }

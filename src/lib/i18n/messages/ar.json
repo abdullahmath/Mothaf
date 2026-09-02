@@ -37,9 +37,7 @@
     "aboutTitle": "نبذة",
     "historyTitle": "لمحة تاريخية",
     "locationTitle": "الموقع",
-    "startTour": "ابدأ الجولة",
-    "sceneCount": "{count} مشهد",
-    "estimatedTime": "نحو {minutes} دقيقة"
+    "startTour": "ابدأ الجولة"
   },
   "tour": {
     "enter": "ادخل الجولة",
@@ -180,5 +178,51 @@
     "dialog": "مربع حوار",
     "closeDialog": "إغلاق مربع الحوار",
     "reducedMotionNote": "تم تقليل الحركة وفقاً لإعدادات نظامك."
+  },
+  "nav": {
+    "destinations": "الوجهات",
+    "events": "الفعاليات"
+  },
+  "counts": {
+    "tours": {
+      "zero": "لا جولات",
+      "one": "جولة واحدة",
+      "two": "جولتان",
+      "few": "{count} جولات",
+      "many": "{count} جولة",
+      "other": "{count} جولة"
+    },
+    "scenes": {
+      "zero": "لا مشاهد",
+      "one": "مشهد واحد",
+      "two": "مشهدان",
+      "few": "{count} مشاهد",
+      "many": "{count} مشهداً",
+      "other": "{count} مشهد"
+    },
+    "pois": {
+      "zero": "لا معالم",
+      "one": "معلم واحد",
+      "two": "معلمان",
+      "few": "{count} معالم",
+      "many": "{count} معلماً",
+      "other": "{count} معلم"
+    },
+    "minutes": {
+      "zero": "أقل من دقيقة",
+      "one": "نحو دقيقة",
+      "two": "نحو دقيقتين",
+      "few": "نحو {count} دقائق",
+      "many": "نحو {count} دقيقة",
+      "other": "نحو {count} دقيقة"
+    },
+    "events": {
+      "zero": "لا فعاليات",
+      "one": "فعالية واحدة",
+      "two": "فعاليتان",
+      "few": "{count} فعاليات",
+      "many": "{count} فعالية",
+      "other": "{count} فعالية"
+    }
   }
 }

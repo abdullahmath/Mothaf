@@ -20,17 +20,30 @@ export type ObjectMeta = {
 export type StoredObject = {
   stream: Readable;
   contentType: string;
+  /** Bytes in this response — the slice length for a ranged read. */
   contentLength: number | null;
+  /** Bytes in the whole object, regardless of any range. */
+  totalLength: number | null;
   /** Strong validator for conditional requests. */
   etag: string | null;
 };
+
+/** Inclusive byte range, as `Range` headers express it. */
+export type ByteRange = { start: number; end: number };
 
 export interface StorageDriver {
   readonly name: string;
 
   put(key: string, body: Buffer, meta: ObjectMeta): Promise<void>;
 
-  get(key: string): Promise<StoredObject | null>;
+  /**
+   * Reads an object, optionally a byte range of it.
+   *
+   * Range support is not optional in practice: without it a browser cannot
+   * seek within a video or audio narration, and Safari refuses to play media
+   * at all when the server ignores `Range`.
+   */
+  get(key: string, range?: ByteRange): Promise<StoredObject | null>;
 
   delete(key: string): Promise<void>;
 
