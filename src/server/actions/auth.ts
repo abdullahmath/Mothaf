@@ -13,7 +13,7 @@ import {
 import { revokeSession } from '../auth/session';
 import { login } from '../domain/auth/login';
 import { isDomainError } from '../domain/errors';
-import { recordAudit, type ActionResult } from '../domain/admin/shared';
+import { field, recordAudit, type ActionResult } from '../domain/admin/shared';
 import { DEFAULT_LOCALE, isAppLocale } from '@/lib/i18n/config';
 
 /**
@@ -24,21 +24,6 @@ import { DEFAULT_LOCALE, isAppLocale } from '@/lib/i18n/config';
  * one endpoint where a cross-site POST would be most valuable to an attacker,
  * and a control that important should be visible in the code that needs it.
  */
-
-/**
- * Reads a form field as `string | undefined`.
- *
- * `FormData.get` returns `null` for a field that was not submitted, and Zod's
- * `.optional()` accepts `undefined` but rejects `null` — so passing the raw
- * result of `get()` into an optional field makes the *whole* schema fail
- * whenever that field is simply absent. The failure then surfaces as a
- * misleading "fill in the required fields" on a form the user filled in
- * correctly. Every action reads optional fields through this.
- */
-function field(formData: FormData, name: string): string | undefined {
-  const value = formData.get(name);
-  return typeof value === 'string' ? value : undefined;
-}
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, 'Enter your email address').max(320),
@@ -67,9 +52,14 @@ export async function loginAction(
 ): Promise<ActionResult> {
   await assertSameOrigin();
 
+  const rawPassword = formData.get('password');
+
   const parsed = loginSchema.safeParse({
     email: field(formData, 'email'),
-    password: field(formData, 'password'),
+    // Read raw, deliberately: `field` trims, and silently stripping a space
+    // someone chose to put in their password would reject a correct
+    // credential for a reason they could never see.
+    password: typeof rawPassword === 'string' ? rawPassword : undefined,
     locale: field(formData, 'locale'),
     next: field(formData, 'next'),
   });

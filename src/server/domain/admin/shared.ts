@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, eq, ne, sql, type SQL } from 'drizzle-orm';
+import { and, eq, getTableColumns, ne, sql, type SQL } from 'drizzle-orm';
 import type { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 import { getDb } from '../../db';
@@ -122,6 +122,27 @@ export async function assertSlugAvailable(options: {
 export type TranslationInput = Record<string, string | null> & { locale: string };
 
 /**
+ * Finds the TypeScript property name for a column.
+ *
+ * Drizzle's insert and update builders are keyed by the *property* name
+ * (`hotspotId`), while `column.name` is the *database* name (`hotspot_id`).
+ * Using the latter as an object key does not throw — the key is simply
+ * unrecognised, and Drizzle emits `DEFAULT` for the real column instead. On a
+ * NOT NULL foreign key that surfaces as a constraint violation; on a nullable
+ * one it would quietly write a null. Both are worse than a compile error, so
+ * the mapping is resolved once, here.
+ */
+function propertyNameOf(table: PgTable, column: PgColumn): string {
+  const entry = Object.entries(getTableColumns(table)).find(
+    ([, candidate]) => candidate.name === column.name,
+  );
+  if (!entry) {
+    throw new Error(`Column ${column.name} does not belong to the given table`);
+  }
+  return entry[0];
+}
+
+/**
  * Replaces the translation rows for one entity.
  *
  * Delete-then-insert inside a transaction, rather than a per-field diff:
@@ -136,11 +157,15 @@ export async function replaceTranslations(options: {
   rows: TranslationInput[];
 }): Promise<void> {
   const db = await getDb();
+  const parentKey = propertyNameOf(options.table, options.parentColumn);
+
   await db.transaction(async (tx) => {
     await tx.delete(options.table).where(eq(options.parentColumn, options.parentId));
     const values = options.rows
+      // A row where every field is blank is an absent translation, not an
+      // empty one, and inserting it would count toward coverage.
       .filter((row) => Object.entries(row).some(([key, value]) => key !== 'locale' && value))
-      .map((row) => ({ ...row, [options.parentColumn.name]: options.parentId }));
+      .map((row) => ({ ...row, [parentKey]: options.parentId }));
     if (values.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await tx.insert(options.table).values(values as any);
@@ -190,11 +215,13 @@ export async function applyOrder(options: {
   orderedIds: string[];
 }): Promise<void> {
   const db = await getDb();
+  const positionKey = propertyNameOf(options.table, options.positionColumn);
+
   await db.transaction(async (tx) => {
     for (const [index, id] of options.orderedIds.entries()) {
       await tx
         .update(options.table)
-        .set({ [options.positionColumn.name]: index })
+        .set({ [positionKey]: index })
         .where(eq(options.idColumn, id));
     }
   });
@@ -237,6 +264,37 @@ export async function recordAudit(options: {
 /* -------------------------------------------------------------------------- */
 /*  Form results                                                              */
 /* -------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------- */
+/*  Reading form fields                                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Reads a form field as `string | undefined`.
+ *
+ * `FormData.get` returns `null` for a field that was not submitted, and Zod's
+ * `.optional()` accepts `undefined` but rejects `null`. Passing the raw result
+ * of `get()` into an optional field therefore fails the *entire* schema
+ * whenever that field is simply absent, and the failure surfaces as a
+ * misleading "required field" error on a form the user filled in correctly.
+ * Every action reads optional fields through this.
+ */
+export function field(formData: FormData, name: string): string | undefined {
+  const value = formData.get(name);
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}
+
+/** An unchecked checkbox is absent from FormData entirely. */
+export function checkbox(formData: FormData, name: string): boolean {
+  return formData.get(name) !== null;
+}
+
+/** Reads a field that may legitimately be cleared, e.g. "no cover image". */
+export function nullableField(formData: FormData, name: string): string | null {
+  return field(formData, name) ?? null;
+}
 
 /** What every Server Action returns, so forms can render errors uniformly. */
 export type ActionResult =

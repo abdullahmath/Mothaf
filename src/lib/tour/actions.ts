@@ -198,7 +198,11 @@ export function parseActionPayload(type: string, payload: unknown): ParsedAction
 }
 
 export function isHotspotActionType(value: unknown): value is HotspotActionType {
-  return typeof value === 'string' && value in HOTSPOT_ACTIONS;
+  // `Object.hasOwn`, not `in`: the `in` operator walks the prototype chain, so
+  // it answers true for "toString", "constructor" and "__proto__". A crafted
+  // action type would then pass this guard and immediately crash on
+  // `HOTSPOT_ACTIONS[type].schema` being undefined.
+  return typeof value === 'string' && Object.hasOwn(HOTSPOT_ACTIONS, value);
 }
 
 /** Extracts the ids a payload references, for existence and scope checks. */
