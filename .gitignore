@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+/dist
+
+# runtime storage (uploaded media lives outside the webroot)
+/storage/
+!/storage/.gitkeep
+
+# environment — never commit real secrets
+.env
+.env.local
+.env.*.local
+.env.production
+
+# testing
+/coverage
+*.tsbuildinfo
+
+# local database data
+/.pgdata/
+
+# editors / os
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log*
