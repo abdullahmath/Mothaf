@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   bigserial,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -113,7 +114,8 @@ export const passwordResetTokens = pgTable(
 export const rateLimits = pgTable('rate_limits', {
   /** e.g. `login:ip:<hash>` or `login:user:<uuid>`. */
   key: text('key').primaryKey(),
-  tokens: integer('tokens').notNull(),
+  /** Fractional, because refill is a rate per second rather than per request. */
+  tokens: doublePrecision('tokens').notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

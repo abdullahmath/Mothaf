@@ -2,7 +2,6 @@ import 'server-only';
 
 import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import type { PgliteDatabase } from 'drizzle-orm/pglite';
 import postgres from 'postgres';
 import * as schema from './schema';
 import { env } from '../config/env';
@@ -14,10 +13,16 @@ import { env } from '../config/env';
  * `pglite` runs Postgres compiled to WebAssembly inside this process for local
  * development and tests. Because both speak Postgres, the migrations and the
  * queries are identical — there is no second dialect to keep in sync.
+ *
+ * A single concrete type rather than a union of the two driver types: a union
+ * makes every builder call ambiguous to the compiler (`.insert().returning()`
+ * resolves to an overload set with no common signature). Both drivers extend
+ * the same `PgDatabase` and expose an identical query builder, so the PGlite
+ * instance is widened to this type at construction. The one genuine
+ * difference — `execute()` returning `{ rows }` rather than an array — is
+ * normalised by `toRows()` in ./raw.ts.
  */
-export type Database =
-  | PostgresJsDatabase<typeof schema>
-  | PgliteDatabase<typeof schema>;
+export type Database = PostgresJsDatabase<typeof schema>;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -34,7 +39,7 @@ async function createDatabase(): Promise<Database> {
     const { PGlite } = await import('@electric-sql/pglite');
     const { drizzle: drizzlePglite } = await import('drizzle-orm/pglite');
     const client = new PGlite(config.PGLITE_DATA_DIR);
-    return drizzlePglite(client, { schema });
+    return drizzlePglite(client, { schema }) as unknown as Database;
   }
 
   // Guaranteed present by the schema refinement in config/env.ts.

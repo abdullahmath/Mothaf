@@ -1,5 +1,5 @@
 {
-  "id": "ae1dc981-b69a-427f-bb0f-dea4054c345f",
+  "id": "56c52177-1691-4ef8-abf9-c3b23919913a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -294,7 +294,7 @@
         },
         "tokens": {
           "name": "tokens",
-          "type": "integer",
+          "type": "double precision",
           "primaryKey": false,
           "notNull": true
         },
