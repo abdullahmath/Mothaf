@@ -189,7 +189,7 @@ for the MVP flows above, and all are deliberate scope decisions.
 | Gap | Consequence | Notes |
 |---|---|---|
 | S3 storage driver is a stub | Multi-instance deploys must use a shared volume until implemented | Interface exists; it throws loudly rather than silently dropping uploads |
-| Admin CRUD screens for destinations, tours, scenes, hotspots, events, analytics | Those entities are managed by seed or direct SQL for now | **All domain services, validation, authorization and Server Actions exist and are tested**; what is missing is the page-level UI. Auth, dashboard and the media library are complete. |
+| Admin screens for scenes, hotspots, POIs, events and analytics | Those entities are managed by seed or direct SQL for now | **All domain services, validation, authorization and Server Actions exist and are tested** — what is missing is page-level UI. Auth, dashboard, media library, destinations and tours are complete. |
 | Visual hotspot placement (click-to-place on the panorama) | Hotspot bearings are entered numerically | `unproject()` exists and is unit-tested, which is the hard part |
 | `robots.txt` / `sitemap.xml` | Weaker SEO for a tourism product | `listDestinationSlugs()` and `listPublishedTourPaths()` exist to build them |
 | Password reset email | Reset flow cannot complete | Token storage and expiry implemented |

@@ -83,7 +83,7 @@ built, because no MVP requirement needs it.
 | 3 | Database schema, migrations, domain services, auth | ✅ |
 | 4 | Virtual-tour engine (renderers, actions, manifest) | ✅ |
 | 5 | Visitor experience | ✅ |
-| 6 | Admin console | ✅ |
+| 6 | Admin console | ◐ auth, dashboard, media, destinations, tours; scenes/hotspots/events UI pending |
 | 7 | Media system | ✅ |
 | 8 | Events and festivals | ✅ |
 | 9 | Multilingual support | ✅ |
@@ -92,9 +92,18 @@ built, because no MVP requirement needs it.
 | 12 | Testing and QA | ✅ |
 | 13 | Performance optimization | ✅ |
 | 14 | Deployment preparation | ✅ |
-| 15 | Final audit | ✅ |
+| 15 | Final audit | ✅ see docs/PRODUCTION-CHECKLIST.md |
 
-## 7. Definition of done
+## 7. Status
+
+Phases 0–5 and 7–15 are complete. Phase 6 is partial: every admin **domain
+service** is implemented, authorized and tested, and the console covers
+authentication, the dashboard, the media library, destinations and tours. The
+remaining screens — scenes, hotspots, points of interest, events and the
+analytics view — are UI over services that already exist. `PRODUCTION-CHECKLIST.md`
+§8 lists this and every other gap.
+
+## 8. Definition of done
 
 A change is done when it type-checks, lints, is covered by a test that fails
 without it, does not widen the attack surface without a note in `SECURITY.md`,

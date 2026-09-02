@@ -9,7 +9,7 @@ import { can } from '@/server/domain/guard';
 import { isDomainError } from '@/server/domain/errors';
 import { AdminPage, StatusPill } from '@/components/admin/AdminPage';
 import { TourForm } from '@/components/admin/TourForm';
-import { toTranslationValues } from '@/components/admin/TranslationFields';
+import { toTranslationValues } from '@/lib/content/translations';
 import { DangerZone } from '@/components/admin/DangerZone';
 import { deleteTourAction } from '@/server/actions/content';
 

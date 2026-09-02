@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { LOCALES, LOCALE_META, type AppLocale } from '@/lib/i18n/config';
+import type { TranslationValues } from '@/lib/content/translations';
 import { Field, TextArea, TextInput } from './AdminForm';
 
 /**
@@ -25,7 +26,7 @@ export type TranslationField = {
   hint?: string;
 };
 
-export type TranslationValues = Record<string, Record<string, string | null | undefined>>;
+export type { TranslationValues };
 
 export function TranslationFields({
   fields,
@@ -102,18 +103,3 @@ export function TranslationFields({
   );
 }
 
-/** Reshapes translation rows from the database into `values[locale][field]`. */
-export function toTranslationValues(
-  rows: readonly { locale: string; [key: string]: unknown }[],
-): TranslationValues {
-  const values: TranslationValues = {};
-  for (const row of rows) {
-    const entry: Record<string, string | null | undefined> = {};
-    for (const [key, value] of Object.entries(row)) {
-      if (key === 'locale') continue;
-      entry[key] = typeof value === 'string' ? value : null;
-    }
-    values[row.locale] = entry;
-  }
-  return values;
-}
