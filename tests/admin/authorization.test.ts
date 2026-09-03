@@ -14,7 +14,12 @@ import {
   PERMISSIONS,
 } from '@/server/auth/permissions';
 import { isDomainError } from '@/server/domain/errors';
-import { createDestination, updateDestination } from '@/server/domain/admin/destinations';
+import {
+  createDestination,
+  destinationInputSchema,
+  getDestinationForAdmin,
+  updateDestination,
+} from '@/server/domain/admin/destinations';
 import { createTour, setTourStatus } from '@/server/domain/admin/tours';
 import { createScene, reorderScenes, setSceneLinks } from '@/server/domain/admin/scenes';
 import { createHotspot } from '@/server/domain/admin/hotspots';
@@ -268,6 +273,64 @@ describe('slug uniqueness', () => {
     await expect(
       createTour({ ...input, destinationId: first.id }, [{ locale: 'en', title: 'C' }]),
     ).rejects.toThrow();
+  });
+});
+
+describe('embedded 3D model', () => {
+  it('accepts a bare 32-character Sketchfab id', () => {
+    const parsed = destinationInputSchema.safeParse({
+      slug: 'x',
+      defaultLocale: 'ar',
+      status: 'draft',
+      sketchfabModelId: '6adbb6547e484b66b65790f34e5aecfc',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects a full URL or embed src, not just a bare id', () => {
+    // The schema only accepts the bare id — the server builds the iframe src
+    // itself, so a value that already looks like a URL is a sign the wrong
+    // thing was pasted, not something to silently extract from. (The action
+    // that reads the form field does the friendly extraction; the domain
+    // schema stays strict.)
+    for (const bad of [
+      'https://sketchfab.com/3d-models/jableh-theatre-6adbb6547e484b66b65790f34e5aecfc',
+      'https://sketchfab.com/models/6adbb6547e484b66b65790f34e5aecfc/embed',
+      'not-hex-at-all-not-hex-at-all-32',
+      '6adbb6547e484b66b65790f34e5aecf', // 31 chars, one short
+    ]) {
+      const parsed = destinationInputSchema.safeParse({
+        slug: 'x',
+        defaultLocale: 'ar',
+        status: 'draft',
+        sketchfabModelId: bad,
+      });
+      expect(parsed.success, `should reject: ${bad}`).toBe(false);
+    }
+  });
+
+  it('stores and returns the id unchanged, and a destination with none has null', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const withModel = await createDestination(
+      {
+        slug: 'has-a-scan',
+        defaultLocale: 'ar',
+        status: 'draft',
+        sketchfabModelId: '6adbb6547e484b66b65790f34e5aecfc',
+      },
+      arEn,
+    );
+    const withoutModel = await createDestination(
+      { slug: 'no-scan', defaultLocale: 'ar', status: 'draft' },
+      arEn,
+    );
+
+    expect((await getDestinationForAdmin(withModel)).sketchfabModelId).toBe(
+      '6adbb6547e484b66b65790f34e5aecfc',
+    );
+    expect((await getDestinationForAdmin(withoutModel)).sketchfabModelId).toBeNull();
   });
 });
 

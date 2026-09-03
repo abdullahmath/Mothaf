@@ -23,6 +23,14 @@ export const DESTINATION = {
   countryCode: 'SY',
   latitude: 35.3606,
   longitude: 35.9256,
+  /**
+   * Real photogrammetry scan of the actual theatre, by Iconem, from their
+   * "REVIVAL" project with Syrian archaeologists:
+   * https://sketchfab.com/3d-models/jableh-theatre-6adbb6547e484b66b65790f34e5aecfc
+   * Not downloadable and not openly licensed, so it is embedded via
+   * Sketchfab's own player rather than copied — see Model3DEmbed.
+   */
+  sketchfabModelId: '6adbb6547e484b66b65790f34e5aecfc',
   translations: [
     {
       locale: 'ar' as const,

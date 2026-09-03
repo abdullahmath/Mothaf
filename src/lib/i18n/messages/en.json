@@ -37,7 +37,9 @@
     "aboutTitle": "About",
     "historyTitle": "History",
     "locationTitle": "Location",
-    "startTour": "Start the tour"
+    "startTour": "Start the tour",
+    "model3dTitle": "3D model",
+    "model3dCredit": "Interactive 3D scan, courtesy of"
   },
   "tour": {
     "enter": "Enter the tour",

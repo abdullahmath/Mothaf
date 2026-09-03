@@ -5,6 +5,7 @@ import { getTranslator, formatCount, isAppLocale, type AppLocale } from '@/lib/i
 import { getDestinationPage } from '@/server/domain/public/destinations';
 import { isDomainError } from '@/server/domain/errors';
 import { EventCard } from '@/components/content/EventCard';
+import { Model3DEmbed } from '@/components/content/Model3DEmbed';
 import { buildSrcSet } from '@/lib/media/srcset';
 
 // Rendered on request, with the underlying queries served from the data
@@ -122,6 +123,11 @@ export default async function DestinationPage({ params }: { params: Params }) {
               </ul>
             )}
           </section>
+
+          {/* ---- 3D model --------------------------------------------------- */}
+          {page.sketchfabModelId && (
+            <Model3DEmbed modelId={page.sketchfabModelId} title={page.name} t={t} />
+          )}
 
           {/* ---- About and history --------------------------------------- */}
           {(page.description || page.historicalContext) && (

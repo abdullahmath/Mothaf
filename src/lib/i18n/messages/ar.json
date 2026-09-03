@@ -37,7 +37,9 @@
     "aboutTitle": "نبذة",
     "historyTitle": "لمحة تاريخية",
     "locationTitle": "الموقع",
-    "startTour": "ابدأ الجولة"
+    "startTour": "ابدأ الجولة",
+    "model3dTitle": "نموذج ثلاثي الأبعاد",
+    "model3dCredit": "مسح تفاعلي ثلاثي الأبعاد، بإذن من"
   },
   "tour": {
     "enter": "ادخل الجولة",

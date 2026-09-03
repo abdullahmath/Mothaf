@@ -91,6 +91,8 @@ export type DestinationPageDTO = {
   latitude: number | null;
   longitude: number | null;
   countryCode: string | null;
+  /** Bare Sketchfab model id. `null` when the destination has no 3D scan. */
+  sketchfabModelId: string | null;
   tours: TourCardDTO[];
   pois: PoiCardDTO[];
   events: EventCardDTO[];

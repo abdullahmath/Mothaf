@@ -1,0 +1,2 @@
+ALTER TABLE "destinations" ADD COLUMN "sketchfab_model_id" varchar(32);--> statement-breakpoint
+ALTER TABLE "destinations" ADD CONSTRAINT "destinations_sketchfab_model_id_format" CHECK ("destinations"."sketchfab_model_id" IS NULL OR ("destinations"."sketchfab_model_id" ~ '^[0-9a-fA-F]{32}$'));

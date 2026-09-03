@@ -52,6 +52,21 @@ export const destinations = pgTable(
     /** ISO 3166-1 alpha-2, for grouping and map defaults. */
     countryCode: varchar('country_code', { length: 2 }),
 
+    /**
+     * Optional embedded 3D scan, shown on the destination page beside the
+     * tour.
+     *
+     * Stored as a bare Sketchfab model id (32 hex characters), never as a
+     * full URL: the embed src is built by the application
+     * (`https://sketchfab.com/models/{id}/embed`), so a destination can never
+     * be made to iframe an arbitrary origin. The CSP's `frame-src` is scoped
+     * to `sketchfab.com` specifically for this.
+     *
+     * This is a general capability, not a Jableh special-case — any
+     * destination may carry one, or none.
+     */
+    sketchfabModelId: varchar('sketchfab_model_id', { length: 32 }),
+
     position: integer('position').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -67,6 +82,13 @@ export const destinations = pgTable(
     check(
       'destinations_longitude_range',
       sql`${t.longitude} IS NULL OR (${t.longitude} BETWEEN -180 AND 180)`,
+    ),
+    // Defence in depth alongside the Zod check on write: even a row inserted
+    // outside the application (a migration, a console) cannot carry a value
+    // that isn't a bare Sketchfab id.
+    check(
+      'destinations_sketchfab_model_id_format',
+      sql`${t.sketchfabModelId} IS NULL OR (${t.sketchfabModelId} ~ '^[0-9a-fA-F]{32}$')`,
     ),
   ],
 );

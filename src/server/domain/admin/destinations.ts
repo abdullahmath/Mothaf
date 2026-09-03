@@ -56,6 +56,20 @@ export const destinationInputSchema = z.object({
   latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
   longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
   summaryNote: optionalText(500).optional(),
+  /**
+   * A bare Sketchfab model id, never a URL. Extracted from either the model's
+   * page URL (the last path segment after the slug) or its embed src
+   * (`sketchfab.com/models/{id}/embed`) — both end in the same 32-character
+   * hex id. Storing only the id, and building the iframe src from it
+   * ourselves, is what stops this field from being able to embed anything
+   * other than a Sketchfab model.
+   */
+  sketchfabModelId: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-f]{32}$/i, 'Paste the 32-character model id, not the full URL')
+    .nullable()
+    .optional(),
 });
 
 export type DestinationInput = z.infer<typeof destinationInputSchema>;
@@ -142,6 +156,7 @@ export async function createDestination(
       countryCode: input.countryCode ?? null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
+      sketchfabModelId: input.sketchfabModelId ?? null,
     })
     .returning({ id: destinations.id });
 
@@ -204,6 +219,7 @@ export async function updateDestination(
       countryCode: input.countryCode ?? null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
+      sketchfabModelId: input.sketchfabModelId ?? null,
       updatedAt: new Date(),
     })
     .where(eq(destinations.id, id));

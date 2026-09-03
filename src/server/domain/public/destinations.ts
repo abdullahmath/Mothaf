@@ -268,6 +268,7 @@ async function getDestinationPageUncached(
     latitude: destination.latitude,
     longitude: destination.longitude,
     countryCode: destination.countryCode,
+    sketchfabModelId: destination.sketchfabModelId,
     tours: tourCards,
     pois: poiCards,
     events,

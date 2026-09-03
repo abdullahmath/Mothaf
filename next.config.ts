@@ -24,6 +24,11 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
+  // A destination may optionally embed its own Sketchfab 3D scan
+  // (destinations.sketchfab_model_id). The iframe src is always built by us
+  // from a validated 32-hex-char id, never from stored HTML, so this origin
+  // is the only thing the field can ever cause to be framed.
+  "frame-src 'self' https://sketchfab.com",
   "manifest-src 'self'",
   isProd ? 'upgrade-insecure-requests' : '',
 ]

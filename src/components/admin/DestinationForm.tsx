@@ -20,6 +20,7 @@ export type DestinationFormValues = {
   countryCode: string | null;
   latitude: number | null;
   longitude: number | null;
+  sketchfabModelId: string | null;
   translations: TranslationValues;
 };
 
@@ -148,6 +149,24 @@ export function DestinationForm({
                   />
                 </Field>
               </div>
+            </Fieldset>
+
+            <Fieldset
+              legend="3D model"
+              description="Optional. An embedded Sketchfab scan shown on the destination page, credited to its creator. Paste the model's Sketchfab URL, its embed code, or just the id — any of the three works."
+            >
+              <Field
+                label="Sketchfab model"
+                name="sketchfabModelId"
+                error={fieldError('sketchfabModelId')}
+              >
+                <TextInput
+                  name="sketchfabModelId"
+                  defaultValue={values.sketchfabModelId}
+                  latin
+                  placeholder="https://sketchfab.com/3d-models/… or the bare id"
+                />
+              </Field>
             </Fieldset>
           </>
         );

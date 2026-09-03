@@ -58,6 +58,7 @@ export default async function DestinationEditPage({
             countryCode: null,
             latitude: null,
             longitude: null,
+            sketchfabModelId: null,
             translations: {},
           }}
         />
@@ -95,6 +96,7 @@ export default async function DestinationEditPage({
           countryCode: destination.countryCode,
           latitude: destination.latitude,
           longitude: destination.longitude,
+          sketchfabModelId: destination.sketchfabModelId,
           translations: toTranslationValues(destination.translations),
         }}
       />

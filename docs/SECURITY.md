@@ -142,6 +142,19 @@ DDoS absorption (belongs at the edge), and virus scanning of uploaded media
   to follow, never fetched server-side. `next.config.ts` declares no
   `remotePatterns`, so the image optimiser cannot be used as a fetch proxy.
 
+**One narrow, deliberate exception:** a destination may optionally embed a
+Sketchfab 3D scan (`destinations.sketchfab_model_id`), rendered as an iframe on
+the destination page. This does not reopen SSRF, because the server never
+fetches the third party at all — the browser does, directly, the same as any
+other iframe. What the field *could* do, if handled carelessly, is let an
+editor iframe an arbitrary origin into the page. That is closed two ways:
+the stored value is constrained to a bare 32-character hex id (validated by
+Zod on write and by a database check constraint independently), the iframe
+`src` is always built by the application as
+`https://sketchfab.com/models/{id}/embed`, and the CSP's `frame-src` is scoped
+to exactly `https://sketchfab.com`. The field can therefore never cause
+anything but a Sketchfab model to be framed.
+
 ---
 
 ## 3. Cross-site request forgery

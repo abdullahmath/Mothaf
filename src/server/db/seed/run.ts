@@ -179,6 +179,7 @@ async function main() {
       countryCode: DESTINATION.countryCode,
       latitude: DESTINATION.latitude,
       longitude: DESTINATION.longitude,
+      sketchfabModelId: DESTINATION.sketchfabModelId,
       position: 0,
     })
     .returning();

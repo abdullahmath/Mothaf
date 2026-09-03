@@ -59,6 +59,20 @@ import { LOCALES } from '@/lib/i18n/config';
  * everything the editor typed.
  */
 
+/**
+ * Pulls a bare Sketchfab model id out of whatever an editor pasted.
+ *
+ * Accepts a model page URL, an embed src, or the id itself — all three end in
+ * the same 32-character hex id, so this is a courtesy rather than a security
+ * boundary. `sketchfabModelId` in the schema still rejects anything that
+ * doesn't come out looking like exactly that.
+ */
+function extractSketchfabId(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const match = raw.match(/[0-9a-f]{32}/i);
+  return match ? match[0] : raw;
+}
+
 /** Turns a thrown domain error into a result the form can render. */
 function toResult(error: unknown): ActionResult {
   if (isDomainError(error)) {
@@ -106,6 +120,7 @@ export async function saveDestinationAction(
     countryCode: nullableField(formData, 'countryCode'),
     latitude: nullableField(formData, 'latitude'),
     longitude: nullableField(formData, 'longitude'),
+    sketchfabModelId: extractSketchfabId(field(formData, 'sketchfabModelId')) ?? null,
   });
   if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
 
