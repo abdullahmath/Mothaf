@@ -23,6 +23,7 @@ export type AdminShellLabels = {
   dashboard: string;
   destinations: string;
   tours: string;
+  pois: string;
   media: string;
   events: string;
   analytics: string;
@@ -53,6 +54,7 @@ export function AdminShell({
       show: can('content:read'),
     },
     { href: `/${locale}/admin/tours`, label: labels.tours, show: can('content:read') },
+    { href: `/${locale}/admin/pois`, label: labels.pois, show: can('content:read') },
     { href: `/${locale}/admin/media`, label: labels.media, show: can('media:read') },
     { href: `/${locale}/admin/events`, label: labels.events, show: can('event:read') },
     { href: `/${locale}/admin/analytics`, label: labels.analytics, show: can('analytics:read') },

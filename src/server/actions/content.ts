@@ -39,6 +39,24 @@ import {
   updateHotspot,
 } from '../domain/admin/hotspots';
 import {
+  createPoi,
+  deletePoi,
+  poiInputSchema,
+  POI_TRANSLATION_FIELDS,
+  updatePoi,
+} from '../domain/admin/pois';
+import {
+  addScheduleItem,
+  createEvent,
+  deleteEvent,
+  deleteScheduleItem,
+  eventInputSchema,
+  EVENT_TRANSLATION_FIELDS,
+  scheduleItemSchema,
+  SCHEDULE_TRANSLATION_FIELDS,
+  updateEvent,
+} from '../domain/admin/events';
+import {
   checkbox,
   fail,
   field,
@@ -432,5 +450,145 @@ export async function deleteHotspotAction(formData: FormData): Promise<void> {
   const locale = field(formData, 'locale') ?? 'ar';
   if (!id) return;
   await deleteHotspot(id);
+  revalidateContent(locale);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Points of interest                                                       */
+/* -------------------------------------------------------------------------- */
+
+export async function savePoiAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await assertSameOrigin();
+
+  const id = field(formData, 'id');
+  const locale = field(formData, 'locale') ?? 'ar';
+
+  const parsed = poiInputSchema.safeParse({
+    destinationId: field(formData, 'destinationId'),
+    slug: field(formData, 'slug'),
+    status: field(formData, 'status'),
+    coverMediaId: nullableField(formData, 'coverMediaId'),
+    latitude: nullableField(formData, 'latitude'),
+    longitude: nullableField(formData, 'longitude'),
+    tags: field(formData, 'tags'),
+  });
+  if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
+
+  const translations = parseTranslationFields(formData, POI_TRANSLATION_FIELDS, LOCALES);
+
+  try {
+    if (id) {
+      await updatePoi(id, parsed.data, translations);
+      revalidateContent(locale);
+      return { ok: true, id, message: 'Saved.' };
+    }
+    const created = await createPoi(parsed.data, translations);
+    revalidateContent(locale);
+    redirect(`/${locale}/admin/pois/${created}`);
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'digest' in error) throw error;
+    return toResult(error);
+  }
+}
+
+export async function deletePoiAction(formData: FormData): Promise<void> {
+  await assertSameOrigin();
+  const id = field(formData, 'id');
+  const locale = field(formData, 'locale') ?? 'ar';
+  if (!id) return;
+  await deletePoi(id);
+  revalidateContent(locale);
+  redirect(`/${locale}/admin/pois`);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Events                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export async function saveEventAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await assertSameOrigin();
+
+  const id = field(formData, 'id');
+  const locale = field(formData, 'locale') ?? 'ar';
+
+  const parsed = eventInputSchema.safeParse({
+    destinationId: field(formData, 'destinationId'),
+    tourId: nullableField(formData, 'tourId'),
+    slug: field(formData, 'slug'),
+    status: field(formData, 'status'),
+    startsAt: field(formData, 'startsAt'),
+    endsAt: field(formData, 'endsAt'),
+    timezone: field(formData, 'timezone') ?? 'UTC',
+    coverMediaId: nullableField(formData, 'coverMediaId'),
+    latitude: nullableField(formData, 'latitude'),
+    longitude: nullableField(formData, 'longitude'),
+  });
+  if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
+
+  const translations = parseTranslationFields(formData, EVENT_TRANSLATION_FIELDS, LOCALES);
+
+  try {
+    if (id) {
+      await updateEvent(id, parsed.data, translations);
+      revalidateContent(locale);
+      return { ok: true, id, message: 'Saved.' };
+    }
+    const created = await createEvent(parsed.data, translations);
+    revalidateContent(locale);
+    redirect(`/${locale}/admin/events/${created}`);
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'digest' in error) throw error;
+    return toResult(error);
+  }
+}
+
+export async function deleteEventAction(formData: FormData): Promise<void> {
+  await assertSameOrigin();
+  const id = field(formData, 'id');
+  const locale = field(formData, 'locale') ?? 'ar';
+  if (!id) return;
+  await deleteEvent(id);
+  revalidateContent(locale);
+  redirect(`/${locale}/admin/events`);
+}
+
+export async function addScheduleItemAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await assertSameOrigin();
+  const locale = field(formData, 'locale') ?? 'ar';
+
+  const parsed = scheduleItemSchema.safeParse({
+    eventId: field(formData, 'eventId'),
+    startsAt: field(formData, 'startsAt'),
+    endsAt: nullableField(formData, 'endsAt'),
+    sceneId: nullableField(formData, 'sceneId'),
+  });
+  if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
+
+  const translations = parseTranslationFields(formData, SCHEDULE_TRANSLATION_FIELDS, LOCALES);
+
+  try {
+    await addScheduleItem(parsed.data, translations);
+    revalidateContent(locale);
+    return { ok: true, message: 'Added.' };
+  } catch (error) {
+    return toResult(error);
+  }
+}
+
+export async function deleteScheduleItemAction(formData: FormData): Promise<void> {
+  await assertSameOrigin();
+  const id = field(formData, 'id');
+  const locale = field(formData, 'locale') ?? 'ar';
+  if (!id) return;
+  await deleteScheduleItem(id);
   revalidateContent(locale);
 }
