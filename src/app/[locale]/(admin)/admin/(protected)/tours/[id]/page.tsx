@@ -128,10 +128,13 @@ export default async function TourEditPage({
         }}
       />
 
-      {/* Scenes are listed rather than edited here: the scene editor is a
-          different kind of screen, built around a picture rather than a form. */}
       <section className="mt-16">
-        <h2 className="eyebrow mb-4">{t('admin.scenes')}</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="eyebrow">{t('admin.scenes')}</h2>
+          <Link href={`/${locale}/admin/scenes/new?tourId=${tour.id}`} className="btn btn-quiet">
+            + {t('admin.scenes')}
+          </Link>
+        </div>
         {tour.scenes.length === 0 ? (
           <p className="text-sm text-lime-faint">
             No scenes yet. A panoramic tour needs at least one published scene before it can go
@@ -140,26 +143,28 @@ export default async function TourEditPage({
         ) : (
           <ol className="grid gap-2">
             {tour.scenes.map((scene, index) => (
-              <li
-                key={scene.id}
-                className="flex items-center gap-4 rounded-md border border-[var(--hairline)] p-3"
-              >
-                <span className="readout">{String(index + 1).padStart(2, '0')}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-lime">{scene.slug}</p>
-                  <p className="readout">
-                    {scene.kind}
-                    {scene.isStart ? ' · start' : ''}
-                  </p>
-                </div>
-                <StatusPill
-                  status={scene.status}
-                  label={
-                    scene.status === 'published'
-                      ? t('admin.statusPublished')
-                      : t('admin.statusDraft')
-                  }
-                />
+              <li key={scene.id}>
+                <Link
+                  href={`/${locale}/admin/scenes/${scene.id}`}
+                  className="flex items-center gap-4 rounded-md border border-[var(--hairline)] p-3 transition-colors hover:border-verdigris"
+                >
+                  <span className="readout">{String(index + 1).padStart(2, '0')}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-lime">{scene.slug}</p>
+                    <p className="readout">
+                      {scene.kind}
+                      {scene.isStart ? ' · start' : ''}
+                    </p>
+                  </div>
+                  <StatusPill
+                    status={scene.status}
+                    label={
+                      scene.status === 'published'
+                        ? t('admin.statusPublished')
+                        : t('admin.statusDraft')
+                    }
+                  />
+                </Link>
               </li>
             ))}
           </ol>
