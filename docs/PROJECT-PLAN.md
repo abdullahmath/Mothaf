@@ -83,7 +83,7 @@ built, because no MVP requirement needs it.
 | 3 | Database schema, migrations, domain services, auth | ✅ |
 | 4 | Virtual-tour engine (renderers, actions, manifest) | ✅ |
 | 5 | Visitor experience | ✅ |
-| 6 | Admin console | ◐ auth, dashboard, media, destinations, tours; scenes/hotspots/events UI pending |
+| 6 | Admin console | ✅ |
 | 7 | Media system | ✅ |
 | 8 | Events and festivals | ✅ |
 | 9 | Multilingual support | ✅ |
@@ -96,12 +96,9 @@ built, because no MVP requirement needs it.
 
 ## 7. Status
 
-Phases 0–5 and 7–15 are complete. Phase 6 is partial: every admin **domain
-service** is implemented, authorized and tested, and the console covers
-authentication, the dashboard, the media library, destinations and tours. The
-remaining screens — scenes, hotspots, points of interest, events and the
-analytics view — are UI over services that already exist. `PRODUCTION-CHECKLIST.md`
-§8 lists this and every other gap.
+All 15 phases complete. `PRODUCTION-CHECKLIST.md` §8 lists the remaining
+deliberate scope decisions (S3 driver, click-to-place hotspots, password
+reset email, and similar).
 
 ## 8. Definition of done
 

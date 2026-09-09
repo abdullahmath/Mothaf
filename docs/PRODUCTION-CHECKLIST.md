@@ -20,7 +20,7 @@ npm run verify
 |---|---|---|
 | Type checking | `npm run typecheck` | ✅ clean, `strict` + `noUncheckedIndexedAccess` |
 | Linting | `npm run lint` | ✅ clean |
-| Tests | `npm test` | ✅ 198 passing |
+| Tests | `npm test` | ✅ 201 passing |
 | Production build | `npm run build` | ✅ 19 routes, hermetic (no network, no database) |
 
 ---
@@ -177,7 +177,7 @@ must never write.
 - [ ] `prefers-reduced-motion` respected — auto-rotation and inertia stop
 - [ ] Lighthouse: performance, accessibility, best practices, SEO
 - [ ] No `console.log` left in shipped code paths; no debug routes
-- [ ] `robots.txt` and `sitemap.xml` — **not yet implemented**, see §8
+- ✅ `robots.txt` and `sitemap.xml` — both dynamic, database-backed, verified serving real URLs for every locale × published destination/tour
 
 ---
 
@@ -189,9 +189,8 @@ for the MVP flows above, and all are deliberate scope decisions.
 | Gap | Consequence | Notes |
 |---|---|---|
 | S3 storage driver is a stub | Multi-instance deploys must use a shared volume until implemented | Interface exists; it throws loudly rather than silently dropping uploads |
-| Admin screens for scenes, hotspots, POIs, events and analytics | Those entities are managed by seed or direct SQL for now | **All domain services, validation, authorization and Server Actions exist and are tested** — what is missing is page-level UI. Auth, dashboard, media library, destinations and tours are complete. |
 | Visual hotspot placement (click-to-place on the panorama) | Hotspot bearings are entered numerically | `unproject()` exists and is unit-tested, which is the hard part |
-| `robots.txt` / `sitemap.xml` | Weaker SEO for a tourism product | `listDestinationSlugs()` and `listPublishedTourPaths()` exist to build them |
+| POI category picker in the admin | An editor cannot assign a category from the UI yet | Column, read path and `listCategories`/`createCategory` all exist |
 | Password reset email | Reset flow cannot complete | Token storage and expiry implemented |
 | Antivirus scanning | See §4 | |
 | Audio/video transcoding | Large source files served as uploaded | Needs ffmpeg |
