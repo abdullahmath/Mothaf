@@ -23,6 +23,7 @@ import {
 import { createTour, setTourStatus } from '@/server/domain/admin/tours';
 import { createScene, reorderScenes, setSceneLinks } from '@/server/domain/admin/scenes';
 import { createHotspot } from '@/server/domain/admin/hotspots';
+import { createCategory, createPoi } from '@/server/domain/admin/pois';
 import { getAnalyticsSummary } from '@/server/domain/admin/analytics';
 
 /**
@@ -570,6 +571,48 @@ describe('hotspot reference scoping', () => {
           status: 'published',
         },
         [{ locale: 'en', label: 'Onward' }],
+      ),
+    ).resolves.toBeTruthy();
+  });
+});
+
+describe('POI category scoping', () => {
+  it('refuses a category that belongs to a different destination', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const home = await makeDestination(db, { slug: 'home-poi' });
+    const elsewhere = await makeDestination(db, { slug: 'elsewhere-poi' });
+    const foreignCategory = await createCategory(
+      { destinationId: elsewhere.id, slug: 'foreign', color: '#4FB3A0', icon: 'marker' },
+      [{ locale: 'en', name: 'Foreign' }],
+    );
+
+    const error = await createPoi(
+      { destinationId: home.id, categoryId: foreignCategory, slug: 'mismatched', status: 'draft', tags: [] },
+      [{ locale: 'en', title: 'Mismatched' }],
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('validation');
+  });
+
+  it('accepts a category from the same destination', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const destination = await makeDestination(db, { slug: 'own-poi' });
+    const category = await createCategory(
+      { destinationId: destination.id, slug: 'own', color: '#4FB3A0', icon: 'marker' },
+      [{ locale: 'en', name: 'Own' }],
+    );
+
+    await expect(
+      createPoi(
+        { destinationId: destination.id, categoryId: category, slug: 'matched', status: 'draft', tags: [] },
+        [{ locale: 'en', title: 'Matched' }],
       ),
     ).resolves.toBeTruthy();
   });

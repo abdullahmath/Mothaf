@@ -3,11 +3,13 @@
 import { savePoiAction } from '@/server/actions/content';
 import type { AppLocale } from '@/lib/i18n/config';
 import { AdminForm, Field, Fieldset, Select, TextInput } from './AdminForm';
+import { PoiCategoryQuickAdd } from './PoiCategoryQuickAdd';
 import { TranslationFields, type TranslationValues } from './TranslationFields';
 
 export type PoiFormValues = {
   id?: string;
   destinationId: string;
+  categoryId: string | null;
   slug: string;
   status: string;
   coverMediaId: string | null;
@@ -21,11 +23,13 @@ export function PoiForm({
   locale,
   values,
   destinationOptions,
+  categoryOptions,
   mediaOptions,
 }: {
   locale: AppLocale;
   values: PoiFormValues;
   destinationOptions: { value: string; label: string }[];
+  categoryOptions: { value: string; label: string }[];
   mediaOptions: { value: string; label: string }[];
 }) {
   return (
@@ -62,6 +66,20 @@ export function PoiForm({
                   ]}
                 />
               </Field>
+
+              <Field
+                label="Category"
+                name="categoryId"
+                hint="Must belong to the same destination as this point of interest."
+                error={fieldError('categoryId')}
+              >
+                <Select
+                  name="categoryId"
+                  defaultValue={values.categoryId}
+                  options={[{ value: '', label: '— none —' }, ...categoryOptions]}
+                />
+              </Field>
+              <PoiCategoryQuickAdd locale={locale} destinationId={values.destinationId} />
             </Fieldset>
 
             <TranslationFields

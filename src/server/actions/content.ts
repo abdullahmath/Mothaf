@@ -39,6 +39,9 @@ import {
   updateHotspot,
 } from '../domain/admin/hotspots';
 import {
+  categoryInputSchema,
+  CATEGORY_TRANSLATION_FIELDS,
+  createCategory,
   createPoi,
   deletePoi,
   poiInputSchema,
@@ -468,6 +471,7 @@ export async function savePoiAction(
 
   const parsed = poiInputSchema.safeParse({
     destinationId: field(formData, 'destinationId'),
+    categoryId: nullableField(formData, 'categoryId'),
     slug: field(formData, 'slug'),
     status: field(formData, 'status'),
     coverMediaId: nullableField(formData, 'coverMediaId'),
@@ -502,6 +506,32 @@ export async function deletePoiAction(formData: FormData): Promise<void> {
   await deletePoi(id);
   revalidateContent(locale);
   redirect(`/${locale}/admin/pois`);
+}
+
+export async function savePoiCategoryAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await assertSameOrigin();
+  const locale = field(formData, 'locale') ?? 'ar';
+
+  const parsed = categoryInputSchema.safeParse({
+    destinationId: field(formData, 'destinationId'),
+    slug: field(formData, 'slug'),
+    color: field(formData, 'color'),
+    icon: field(formData, 'icon') ?? 'marker',
+  });
+  if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
+
+  const translations = parseTranslationFields(formData, CATEGORY_TRANSLATION_FIELDS, LOCALES);
+
+  try {
+    await createCategory(parsed.data, translations);
+    revalidateContent(locale);
+    return { ok: true, message: 'Category added.' };
+  } catch (error) {
+    return toResult(error);
+  }
 }
 
 /* -------------------------------------------------------------------------- */

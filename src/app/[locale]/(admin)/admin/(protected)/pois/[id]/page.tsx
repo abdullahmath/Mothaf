@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslator, isAppLocale, type AppLocale } from '@/lib/i18n';
-import { getPoiForAdmin } from '@/server/domain/admin/pois';
+import { getPoiForAdmin, listCategories } from '@/server/domain/admin/pois';
 import { listDestinationsForAdmin } from '@/server/domain/admin/destinations';
 import { listMedia } from '@/server/domain/admin/media';
 import { isDomainError } from '@/server/domain/errors';
@@ -15,6 +15,37 @@ import { can } from '@/server/domain/guard';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
+
+/**
+ * Category options across every destination.
+ *
+ * `listCategories` is scoped to one destination — there is no "everyone's
+ * categories" query — so this fans out the same way the POI list page fans
+ * out `listPoisForAdmin`. Small, admin-only data; the destination name in the
+ * label is what lets an editor tell them apart, since a POI's destination is
+ * chosen in the same form and this list is not filtered to match it.
+ */
+async function loadCategoryOptions(
+  destinations: Awaited<ReturnType<typeof listDestinationsForAdmin>>,
+  locale: AppLocale,
+) {
+  const perDestination = await Promise.all(
+    destinations.map(async (destination) => ({
+      destination,
+      categories: await listCategories(destination.id),
+    })),
+  );
+  return perDestination.flatMap(({ destination, categories }) => {
+    const destName =
+      destination.translations.find((tr) => tr.locale === locale)?.name ??
+      destination.translations[0]?.name ??
+      destination.slug;
+    return categories.map((category) => ({
+      value: category.id,
+      label: `${destName} — ${category.translations.find((tr) => tr.locale === locale)?.name ?? category.slug}`,
+    }));
+  });
+}
 
 export default async function PoiEditPage({
   params,
@@ -32,6 +63,7 @@ export default async function PoiEditPage({
     listMedia('all', 200),
     can('content:publish'),
   ]);
+  const categoryOptions = await loadCategoryOptions(destinations, locale);
 
   const destinationOptions = destinations.map((destination) => ({
     value: destination.id,
@@ -69,9 +101,11 @@ export default async function PoiEditPage({
         <PoiForm
           locale={locale}
           destinationOptions={destinationOptions}
+          categoryOptions={categoryOptions}
           mediaOptions={mediaOptions}
           values={{
             destinationId: destinationOptions[0]!.value,
+            categoryId: null,
             slug: '',
             status: 'draft',
             coverMediaId: null,
@@ -105,10 +139,12 @@ export default async function PoiEditPage({
       <PoiForm
         locale={locale}
         destinationOptions={destinationOptions}
+        categoryOptions={categoryOptions}
         mediaOptions={mediaOptions}
         values={{
           id: poi.id,
           destinationId: poi.destinationId,
+          categoryId: poi.categoryId,
           slug: poi.slug,
           status: poi.status,
           coverMediaId: poi.coverMediaId,

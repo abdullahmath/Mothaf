@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../../db';
 import {
@@ -10,7 +10,7 @@ import {
   pointsOfInterest,
 } from '../../db/schema';
 import { requirePermission } from '../guard';
-import { notFound } from '../errors';
+import { notFound, validation } from '../errors';
 import {
   assertSlugAvailable,
   recordAudit,
@@ -57,6 +57,28 @@ export const poiInputSchema = z.object({
 });
 
 export type PoiInput = z.infer<typeof poiInputSchema>;
+
+/**
+ * Confirms a category actually belongs to the POI's own destination.
+ *
+ * `categoryId` arrives as a bare id from the form; without this check, a
+ * crafted request could file a point of interest under another
+ * destination's category, the same cross-tenant reference the hotspot
+ * registry already guards against.
+ */
+async function assertCategoryInDestination(categoryId: string, destinationId: string): Promise<void> {
+  const db = await getDb();
+  const [category] = await db
+    .select({ id: poiCategories.id })
+    .from(poiCategories)
+    .where(and(eq(poiCategories.id, categoryId), eq(poiCategories.destinationId, destinationId)))
+    .limit(1);
+  if (!category) {
+    throw validation('That category belongs to a different destination.', {
+      categoryId: 'Choose a category from this destination',
+    });
+  }
+}
 
 export async function listPoisForAdmin(destinationId: string) {
   await requirePermission('content:read');
@@ -111,6 +133,7 @@ export async function createPoi(
     slug: input.slug,
     scope: eq(pointsOfInterest.destinationId, input.destinationId),
   });
+  if (input.categoryId) await assertCategoryInDestination(input.categoryId, input.destinationId);
 
   const [row] = await db
     .insert(pointsOfInterest)
@@ -160,6 +183,7 @@ export async function updatePoi(
     scope: eq(pointsOfInterest.destinationId, input.destinationId),
     excludeId: id,
   });
+  if (input.categoryId) await assertCategoryInDestination(input.categoryId, input.destinationId);
 
   await db
     .update(pointsOfInterest)
