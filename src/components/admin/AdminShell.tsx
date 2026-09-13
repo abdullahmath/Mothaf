@@ -70,41 +70,66 @@ export function AdminShell({
     <div className="min-h-dvh md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <aside className="border-b border-[var(--hairline)] md:sticky md:top-0 md:h-dvh md:border-b-0 md:border-e">
         <div className="flex h-full flex-col p-4">
-          <Link
-            href={`/${locale}/admin`}
-            className="mb-6 flex items-center gap-2.5 px-2 text-lime transition-colors hover:text-verdigris-bright"
-          >
-            <Wordmark size={20} />
-            <span className="display text-base">{labels.title}</span>
-          </Link>
+          {/* Mobile only: the sidebar's nav list is long enough that leaving
+              it always expanded would push every page's content below the
+              fold before a visitor sees any of it. A plain checkbox toggle,
+              so collapsing it needs no client-side script. */}
+          <input type="checkbox" id="admin-nav-toggle" className="peer sr-only" />
 
-          <nav aria-label={labels.title} className="grid gap-0.5">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-md px-2.5 py-2 text-sm text-lime-dim transition-colors hover:bg-[color-mix(in_oklab,var(--color-lime)_6%,transparent)] hover:text-lime"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="mt-auto grid gap-2 border-t border-[var(--hairline)] pt-4">
+          <div className="mb-2 flex items-center justify-between md:mb-6">
             <Link
-              href={`/${locale}`}
-              className="rounded-md px-2.5 py-2 text-sm text-lime-faint transition-colors hover:text-lime"
+              href={`/${locale}/admin`}
+              className="flex items-center gap-2.5 px-2 text-lime transition-colors hover:text-verdigris-bright"
             >
-              {labels.viewSite} ↗
+              <Wordmark size={20} />
+              <span className="display text-base">{labels.title}</span>
             </Link>
-            <div className="px-2.5 pt-1">
-              <p className="truncate text-sm text-lime">{user.displayName}</p>
-              <p className="readout truncate" dir="ltr">
-                {user.email}
-              </p>
-              <p className="mt-1 text-2xs text-lime-faint">{user.role.replace('_', ' ')}</p>
+
+            <label
+              htmlFor="admin-nav-toggle"
+              className="admin-nav-burger grid h-9 w-9 place-items-center peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-verdigris)] md:hidden"
+              aria-label={labels.title}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+                <path
+                  d="M3 5h14M3 10h14M3 15h14"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </label>
+          </div>
+
+          <div className="hidden peer-checked:flex peer-checked:flex-col md:flex md:min-h-0 md:flex-1 md:flex-col">
+            <nav aria-label={labels.title} className="grid gap-0.5 pb-2 md:pb-0">
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-md px-2.5 py-2 text-sm text-lime-dim transition-colors hover:bg-[color-mix(in_oklab,var(--color-lime)_6%,transparent)] hover:text-lime"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="grid gap-2 border-t border-[var(--hairline)] pt-4 md:mt-auto">
+              <Link
+                href={`/${locale}`}
+                className="rounded-md px-2.5 py-2 text-sm text-lime-faint transition-colors hover:text-lime"
+              >
+                {labels.viewSite} ↗
+              </Link>
+              <div className="px-2.5 pt-1">
+                <p className="truncate text-sm text-lime">{user.displayName}</p>
+                <p className="readout truncate" dir="ltr">
+                  {user.email}
+                </p>
+                <p className="mt-1 text-2xs text-lime-faint">{user.role.replace('_', ' ')}</p>
+              </div>
+              <LogoutButton locale={locale} label={labels.signOut} />
             </div>
-            <LogoutButton locale={locale} label={labels.signOut} />
           </div>
         </div>
       </aside>
