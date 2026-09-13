@@ -166,9 +166,14 @@
     "sceneViews": "Scene views",
     "hotspotClicks": "Hotspot interactions",
     "poiViews": "Points of interest opened",
+    "mediaPlays": "Photos & media played",
+    "tourCompletes": "Tours completed",
+    "completionRate": "Completion rate",
     "avgDuration": "Average visit",
     "byLocale": "By language",
     "byDevice": "By device",
+    "topPois": "Top points of interest",
+    "dailyTrend": "Activity by day",
     "noData": "No data for this period yet."
   },
   "errors": {

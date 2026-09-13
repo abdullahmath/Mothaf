@@ -21,11 +21,16 @@ export type AnalyticsSummary = {
   sceneViews: number;
   hotspotClicks: number;
   poiViews: number;
+  mediaPlays: number;
+  tourCompletes: number;
+  /** `tourCompletes / tourOpens`, as a whole percentage. `null` with no opens. */
+  completionRatePercent: number | null;
   /** Median rather than mean: one abandoned tab would skew an average badly. */
   medianSceneDwellSeconds: number | null;
   byLocale: { locale: string; value: number }[];
   byDevice: { device: string; value: number }[];
   topScenes: { sceneId: string; title: string; value: number }[];
+  topPois: { poiId: string; title: string; value: number }[];
   daily: { day: string; value: number }[];
 };
 
@@ -35,7 +40,7 @@ export async function getAnalyticsSummary(days: Period = 30): Promise<AnalyticsS
 
   const since = sql`now() - (${days} * interval '1 day')`;
 
-  const [totals, locales, devices, scenes, daily, dwell] = await Promise.all([
+  const [totals, locales, devices, scenes, pois, daily, dwell] = await Promise.all([
     db.execute(sql`
       SELECT type, count(*)::int AS value
       FROM analytics_events
@@ -67,6 +72,18 @@ export async function getAnalyticsSummary(days: Period = 30): Promise<AnalyticsS
       LIMIT 10
     `),
     db.execute(sql`
+      SELECT a.poi_id AS "poiId",
+             coalesce(max(t.title), p.slug) AS title,
+             count(*)::int AS value
+      FROM analytics_events a
+      JOIN points_of_interest p ON p.id = a.poi_id
+      LEFT JOIN poi_translations t ON t.poi_id = p.id
+      WHERE a.occurred_at >= ${since} AND a.type = 'poi_view'
+      GROUP BY a.poi_id, p.slug
+      ORDER BY value DESC
+      LIMIT 10
+    `),
+    db.execute(sql`
       SELECT to_char(date_trunc('day', occurred_at), 'YYYY-MM-DD') AS day,
              count(*)::int AS value
       FROM analytics_events
@@ -85,11 +102,17 @@ export async function getAnalyticsSummary(days: Period = 30): Promise<AnalyticsS
   );
   const medianMs = toRows<{ median: number | string | null }>(dwell)[0]?.median;
 
+  const tourOpens = totalsBy.get('tour_open') ?? 0;
+  const tourCompletes = totalsBy.get('tour_complete') ?? 0;
+
   return {
-    tourOpens: totalsBy.get('tour_open') ?? 0,
+    tourOpens,
     sceneViews: totalsBy.get('scene_view') ?? 0,
     hotspotClicks: totalsBy.get('hotspot_click') ?? 0,
     poiViews: totalsBy.get('poi_view') ?? 0,
+    mediaPlays: totalsBy.get('media_play') ?? 0,
+    tourCompletes,
+    completionRatePercent: tourOpens === 0 ? null : Math.round((tourCompletes / tourOpens) * 100),
     medianSceneDwellSeconds:
       medianMs === null || medianMs === undefined ? null : Math.round(Number(medianMs) / 1000),
     byLocale: toRows<{ locale: string; value: number }>(locales).map((r) => ({
@@ -102,6 +125,11 @@ export async function getAnalyticsSummary(days: Period = 30): Promise<AnalyticsS
     })),
     topScenes: toRows<{ sceneId: string; title: string; value: number }>(scenes).map((r) => ({
       sceneId: r.sceneId,
+      title: r.title,
+      value: Number(r.value),
+    })),
+    topPois: toRows<{ poiId: string; title: string; value: number }>(pois).map((r) => ({
+      poiId: r.poiId,
       title: r.title,
       value: Number(r.value),
     })),

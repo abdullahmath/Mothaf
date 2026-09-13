@@ -166,9 +166,14 @@
     "sceneViews": "مشاهدات المشاهد",
     "hotspotClicks": "التفاعل مع العلامات",
     "poiViews": "المعالم المفتوحة",
+    "mediaPlays": "تشغيل الصور والوسائط",
+    "tourCompletes": "الجولات المكتملة",
+    "completionRate": "نسبة الإكمال",
     "avgDuration": "متوسط مدة الزيارة",
     "byLocale": "حسب اللغة",
     "byDevice": "حسب الجهاز",
+    "topPois": "أبرز المعالم",
+    "dailyTrend": "النشاط اليومي",
     "noData": "لا توجد بيانات لهذه الفترة بعد."
   },
   "errors": {

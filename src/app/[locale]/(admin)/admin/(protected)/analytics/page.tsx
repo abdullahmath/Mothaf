@@ -42,7 +42,12 @@ export default async function AnalyticsAdminPage({
     { label: t('analytics.sceneViews'), value: summary.sceneViews },
     { label: t('analytics.hotspotClicks'), value: summary.hotspotClicks },
     { label: t('analytics.poiViews'), value: summary.poiViews },
+    { label: t('analytics.mediaPlays'), value: summary.mediaPlays },
+    { label: t('analytics.tourCompletes'), value: summary.tourCompletes },
   ];
+
+  const hasAnyData = tiles.some((tile) => tile.value > 0);
+  const dailyMax = Math.max(1, ...summary.daily.map((row) => row.value));
 
   return (
     <AdminPage
@@ -62,14 +67,11 @@ export default async function AnalyticsAdminPage({
         </nav>
       }
     >
-      {summary.tourOpens === 0 &&
-      summary.sceneViews === 0 &&
-      summary.hotspotClicks === 0 &&
-      summary.poiViews === 0 ? (
+      {!hasAnyData ? (
         <p className="text-sm text-lime-dim">{t('analytics.noData')}</p>
       ) : (
         <>
-          <ul className="grid gap-px overflow-hidden rounded-md border border-[var(--hairline)] bg-[var(--hairline)] sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="grid gap-px overflow-hidden rounded-md border border-[var(--hairline)] bg-[var(--hairline)] sm:grid-cols-2 lg:grid-cols-3">
             {tiles.map((tile) => (
               <li key={tile.label} className="bg-ink p-5">
                 <p className="eyebrow">{tile.label}</p>
@@ -78,11 +80,48 @@ export default async function AnalyticsAdminPage({
             ))}
           </ul>
 
-          {summary.medianSceneDwellSeconds !== null && (
-            <p className="mt-6 text-sm text-lime-dim">
-              {t('analytics.avgDuration')}:{' '}
-              <span className="mono text-lime">{summary.medianSceneDwellSeconds}s</span>
-            </p>
+          <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 text-sm text-lime-dim">
+            {summary.medianSceneDwellSeconds !== null && (
+              <p>
+                {t('analytics.avgDuration')}:{' '}
+                <span className="mono text-lime">{summary.medianSceneDwellSeconds}s</span>
+              </p>
+            )}
+            {summary.completionRatePercent !== null && (
+              <p>
+                {t('analytics.completionRate')}:{' '}
+                <span className="mono text-lime">{summary.completionRatePercent}%</span>
+              </p>
+            )}
+          </div>
+
+          {summary.daily.length > 0 && (
+            <section className="mt-12">
+              <h2 className="eyebrow mb-4">{t('analytics.dailyTrend')}</h2>
+              <div
+                className="flex h-32 items-end gap-1 rounded-md border border-[var(--hairline)] p-4"
+                role="img"
+                aria-label={t('analytics.dailyTrend')}
+              >
+                {summary.daily.map((row) => (
+                  <div
+                    key={row.day}
+                    className="group relative flex-1"
+                    style={{ height: '100%' }}
+                    title={`${row.day}: ${row.value}`}
+                  >
+                    <div
+                      className="absolute inset-x-0 bottom-0 rounded-t-sm bg-verdigris transition-colors group-hover:bg-verdigris-bright"
+                      style={{ height: `${Math.max(2, (row.value / dailyMax) * 100)}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 flex justify-between text-2xs text-lime-faint">
+                <span>{summary.daily[0]?.day}</span>
+                <span>{summary.daily[summary.daily.length - 1]?.day}</span>
+              </div>
+            </section>
           )}
 
           <div className="mt-12 grid gap-10 sm:grid-cols-2">
@@ -126,6 +165,23 @@ export default async function AnalyticsAdminPage({
                 {summary.topScenes.map((row) => (
                   <li
                     key={row.sceneId}
+                    className="flex items-center justify-between rounded-md border border-[var(--hairline)] p-3 text-sm"
+                  >
+                    <span className="text-lime">{row.title}</span>
+                    <span className="readout">{formatNumber(locale, row.value)}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
+          {summary.topPois.length > 0 && (
+            <section className="mt-12">
+              <h2 className="eyebrow mb-4">{t('analytics.topPois')}</h2>
+              <ol className="grid gap-2">
+                {summary.topPois.map((row) => (
+                  <li
+                    key={row.poiId}
                     className="flex items-center justify-between rounded-md border border-[var(--hairline)] p-3 text-sm"
                   >
                     <span className="text-lime">{row.title}</span>
