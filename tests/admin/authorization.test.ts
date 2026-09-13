@@ -932,6 +932,59 @@ describe('heritage sites', () => {
     expect(isDomainError(error)).toBe(true);
     expect(error.code).toBe('not_found');
   });
+
+  it('actually moves a site when its destination is changed on update', async () => {
+    // Regression: updateHeritageSite scoped the slug-uniqueness check to the
+    // *new* destinationId but never wrote destinationId itself, so picking a
+    // different destination in the form silently had no effect on the row.
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const origin = await makeDestination(db, { slug: 'origin-place' });
+    const target = await makeDestination(db, { slug: 'target-place' });
+
+    const id = await createHeritageSite(
+      { destinationId: origin.id, slug: 'the-well', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'The well' }],
+    );
+
+    await updateHeritageSite(
+      id,
+      { destinationId: target.id, slug: 'the-well', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'The well' }],
+    );
+
+    const [row] = await db.select().from(schema.heritageSites).where(eq(schema.heritageSites.id, id));
+    expect(row!.destinationId).toBe(target.id);
+
+    // And the slug is free again in the destination it left.
+    await expect(
+      createHeritageSite(
+        { destinationId: origin.id, slug: 'the-well', status: 'draft', galleryMediaIds: [] },
+        [{ locale: 'en', title: 'A different well' }],
+      ),
+    ).resolves.toBeTruthy();
+  });
+
+  it('refuses a content editor trying to delete one — matches the DangerZone UI gate', async () => {
+    const admin = await makeUser(db, 'administrator');
+    actAs({ id: admin.id, role: 'administrator' });
+    const destination = await makeDestination(db);
+    const id = await createHeritageSite(
+      { destinationId: destination.id, slug: 'protected-site', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'Protected' }],
+    );
+
+    const editor = await makeUser(db, 'content_editor');
+    actAs({ id: editor.id, role: 'content_editor' });
+    const error = await deleteHeritageSite(id).then(() => null).catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('forbidden');
+
+    actAs({ id: admin.id, role: 'administrator' });
+    await expect(getHeritageSiteForAdmin(id)).resolves.toBeTruthy();
+  });
 });
 
 describe('translation writes', () => {

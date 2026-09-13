@@ -107,7 +107,7 @@ export default async function DestinationEditPage({
           id={destination.id}
           locale={locale}
           label={t('common.delete')}
-          warning="Deleting this destination also removes its tours, scenes, hotspots, points of interest and events. This cannot be undone."
+          warning="Deleting this destination also removes its tours, scenes, hotspots, points of interest, heritage sites and events. This cannot be undone."
         />
       )}
     </AdminPage>

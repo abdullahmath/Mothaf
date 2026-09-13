@@ -188,6 +188,7 @@ export async function updateHeritageSite(
   await db
     .update(heritageSites)
     .set({
+      destinationId: input.destinationId,
       slug: input.slug,
       status: input.status,
       publishedAt: input.status === 'published' ? (existing.publishedAt ?? new Date()) : existing.publishedAt,
@@ -217,7 +218,11 @@ export async function updateHeritageSite(
 }
 
 export async function deleteHeritageSite(id: string): Promise<void> {
-  const auth = await requirePermission('content:write');
+  // Matches the admin UI's own gate (DangerZone only renders for
+  // `content:publish`, see heritage-sites/[id]/page.tsx) — a content editor
+  // who can write drafts should not be able to delete one outright just
+  // because they know the server action exists.
+  const auth = await requirePermission('content:publish');
   const db = await getDb();
   await db.delete(heritageSites).where(eq(heritageSites.id, id));
   await recordAudit({
