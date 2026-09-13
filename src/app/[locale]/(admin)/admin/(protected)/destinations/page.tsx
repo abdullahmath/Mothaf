@@ -81,12 +81,33 @@ export default async function DestinationsAdminPage({
               {destinations.map((destination) => (
                 <tr key={destination.id}>
                   <td>
-                    <Link
-                      href={`/${locale}/admin/destinations/${destination.id}`}
-                      className="text-lime transition-colors hover:text-verdigris-bright"
-                    >
-                      {nameOf(destination.translations, destination.slug)}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/${locale}/admin/destinations/${destination.id}`}
+                        className="text-lime transition-colors hover:text-verdigris-bright"
+                      >
+                        {nameOf(destination.translations, destination.slug)}
+                      </Link>
+                      {destination.latitude !== null && destination.longitude !== null && (
+                        <a
+                          href={`https://www.google.com/maps?q=${destination.latitude},${destination.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={t('destination.locationTitle')}
+                          aria-label={t('destination.locationTitle')}
+                          className="text-lime-faint transition-colors hover:text-verdigris-bright"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <path
+                              d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                            />
+                            <circle cx="10" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
                     <p className="readout">{destination.slug}</p>
                   </td>
                   <td>
