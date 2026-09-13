@@ -80,7 +80,7 @@ export default async function MediaLibraryPage({
           </nav>
 
           {assets.length === 0 ? (
-            <EmptyState message="No files yet. Upload a panorama to start building a tour." />
+            <EmptyState message={t('admin.emptyMedia')} />
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {assets.map((asset) => (

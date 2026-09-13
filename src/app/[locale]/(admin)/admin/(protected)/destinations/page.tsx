@@ -59,7 +59,7 @@ export default async function DestinationsAdminPage({
     >
       {destinations.length === 0 ? (
         <EmptyState
-          message="No destinations yet. A destination is the place — a site, a museum, a landmark — that tours belong to."
+          message={t('admin.emptyDestinations')}
           actionHref={mayWrite ? `/${locale}/admin/destinations/new` : undefined}
           actionLabel={t('common.create')}
         />

@@ -68,7 +68,7 @@ export default async function HeritageSitesAdminPage({
     >
       {sites.length === 0 ? (
         <EmptyState
-          message="No heritage sites yet."
+          message={t('admin.emptyHeritageSites')}
           actionHref={mayWrite ? `/${locale}/admin/heritage-sites/new` : undefined}
           actionLabel={t('common.create')}
         />

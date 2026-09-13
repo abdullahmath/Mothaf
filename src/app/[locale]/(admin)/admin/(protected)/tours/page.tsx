@@ -52,7 +52,7 @@ export default async function ToursAdminPage({
     >
       {tours.length === 0 ? (
         <EmptyState
-          message="No tours yet. A tour is one navigable experience within a destination."
+          message={t('admin.emptyTours')}
           actionHref={mayWrite ? `/${locale}/admin/tours/new` : undefined}
           actionLabel={t('common.create')}
         />

@@ -151,7 +151,13 @@
     "preview": "Preview",
     "noPermission": "You do not have permission to do that.",
     "translationCoverage": "{done} of {total} fields translated",
-    "untranslated": "Not translated"
+    "untranslated": "Not translated",
+    "emptyDestinations": "No destinations yet. A destination is the place — a site, a museum, a landmark — that tours belong to.",
+    "emptyTours": "No tours yet. A tour is one navigable experience within a destination.",
+    "emptyPois": "No points of interest yet.",
+    "emptyHeritageSites": "No heritage sites yet.",
+    "emptyEvents": "No events yet.",
+    "emptyMedia": "No files yet. Upload a panorama to start building a tour."
   },
   "analytics": {
     "tourOpens": "Tour opens",

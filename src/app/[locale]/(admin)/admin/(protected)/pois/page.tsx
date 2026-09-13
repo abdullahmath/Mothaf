@@ -69,7 +69,7 @@ export default async function PoisAdminPage({
     >
       {pois.length === 0 ? (
         <EmptyState
-          message="No points of interest yet."
+          message={t('admin.emptyPois')}
           actionHref={mayWrite ? `/${locale}/admin/pois/new` : undefined}
           actionLabel={t('common.create')}
         />

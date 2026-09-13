@@ -55,7 +55,7 @@ export default async function EventsAdminPage({
     >
       {events.length === 0 ? (
         <EmptyState
-          message="No events yet."
+          message={t('admin.emptyEvents')}
           actionHref={mayWrite ? `/${locale}/admin/events/new` : undefined}
           actionLabel={t('common.create')}
         />
