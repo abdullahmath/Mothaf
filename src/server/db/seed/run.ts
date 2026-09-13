@@ -17,6 +17,9 @@ import {
   eventScheduleItems,
   eventScheduleItemTranslations,
   eventTranslations,
+  heritageSiteMedia,
+  heritageSiteTranslations,
+  heritageSites,
   hotspots,
   hotspotTranslations,
   locales,
@@ -41,6 +44,7 @@ import { renderFlatImage, renderPanorama, SCENE_RECIPES } from './panoramas';
 import {
   DESTINATION,
   EVENT,
+  HERITAGE_SITES,
   HOTSPOTS,
   POIS,
   POI_CATEGORIES,
@@ -251,6 +255,46 @@ async function main() {
     await db.insert(poiMedia).values({ poiId: row!.id, mediaId: coverAsset.id, role: 'gallery' });
   }
 
+  /* ---- heritage sites ----------------------------------------------------- */
+
+  for (const [index, site] of HERITAGE_SITES.entries()) {
+    const [row] = await db
+      .insert(heritageSites)
+      .values({
+        destinationId,
+        slug: site.slug,
+        status: 'published',
+        publishedAt: new Date(),
+        coverMediaId: coverAsset.id,
+        latitude: site.latitude,
+        longitude: site.longitude,
+        position: index,
+      })
+      .returning();
+
+    await db.insert(heritageSiteTranslations).values(
+      site.translations.map((translation) => ({
+        heritageSiteId: row!.id,
+        locale: translation.locale,
+        title: translation.title,
+        shortDescription: translation.shortDescription,
+        description: translation.description,
+      })),
+    );
+
+    // Reuses the scene panoramas already rendered above as gallery photos —
+    // a real, varied set of images rather than the single cover repeated.
+    const galleryMediaIds = [...panoramaBySlug.values()];
+    await db.insert(heritageSiteMedia).values(
+      galleryMediaIds.map((mediaId, position) => ({
+        heritageSiteId: row!.id,
+        mediaId,
+        role: 'gallery' as const,
+        position,
+      })),
+    );
+  }
+
   /* ---- tour and scenes --------------------------------------------------- */
 
   const [tour] = await db
@@ -433,7 +477,9 @@ async function main() {
 
   console.log('');
   console.log(`✓ Seeded "${DESTINATION.slug}"`);
-  console.log(`  ${SCENES.length} scenes · ${HOTSPOTS.length} hotspots · ${POIS.length} POIs · 1 event`);
+  console.log(
+    `  ${SCENES.length} scenes · ${HOTSPOTS.length} hotspots · ${POIS.length} POIs · ${HERITAGE_SITES.length} heritage site · 1 event`,
+  );
   console.log('');
   console.log('  Visit  /ar/destinations/roman-theatre-jableh');
   console.log('  and    /en/destinations/roman-theatre-jableh');

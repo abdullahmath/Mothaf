@@ -42,6 +42,7 @@ export default async function AdminDashboard({
     { label: t('admin.tours'), value: counts.tours, sub: `${counts.publishedTours} ${t('admin.statusPublished').toLowerCase()}` },
     { label: t('admin.scenes'), value: counts.scenes, sub: `${counts.hotspots} ${t('admin.hotspots').toLowerCase()}` },
     { label: t('admin.pois'), value: counts.pois, sub: '' },
+    { label: t('admin.heritageSites'), value: counts.heritageSites, sub: '' },
     { label: t('admin.events'), value: counts.events, sub: '' },
     { label: t('admin.media'), value: counts.media, sub: '' },
   ];
@@ -94,6 +95,9 @@ export default async function AdminDashboard({
           </Link>
           <Link href={`/${locale}/admin/tours/new`} className="btn btn-quiet">
             + {t('admin.tours')}
+          </Link>
+          <Link href={`/${locale}/admin/heritage-sites/new`} className="btn btn-quiet">
+            + {t('admin.heritageSites')}
           </Link>
           <Link href={`/${locale}/admin/media`} className="btn btn-quiet">
             + {t('admin.media')}

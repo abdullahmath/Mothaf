@@ -190,6 +190,36 @@ export const POIS = [
   },
 ];
 
+/**
+ * One heritage site, so the feature has real content to show rather than
+ * an empty section in the demo. Deliberately built from the same
+ * already-disclaimed destination copy above rather than any new claim —
+ * see the note at the end of each description.
+ */
+export const HERITAGE_SITES = [
+  {
+    slug: 'theatre-precinct',
+    latitude: 35.3606,
+    longitude: 35.9256,
+    translations: [
+      {
+        locale: 'ar' as const,
+        title: 'محيط المسرح الروماني',
+        shortDescription: 'الرقعة الأثرية التي يقوم عليها المسرح ومرافقه.',
+        description:
+          'يضمّ هذا المحيط الأثري المسرح الروماني بعناصره الرئيسية: المدرّج، ساحة الأوركسترا، بناء الخشبة، والمداخل المقببة، إلى جانب الأرضية المحيطة التي خضعت لأعمال صيانة وترميم على مراحل.\n\nملاحظة: هذا المدخل هو محتوى تجريبي لعرض ميزة "مناطق التراث"، ويجب استبداله بمحتوى معتمد من الجهة الثقافية المسؤولة قبل النشر الفعلي.',
+      },
+      {
+        locale: 'en' as const,
+        title: 'The Theatre Precinct',
+        shortDescription: 'The archaeological area the theatre and its structures occupy.',
+        description:
+          'This precinct contains the Roman theatre and its main elements — the cavea, the orchestra, the stage building, and the vaulted entrances — along with the surrounding ground, which has been conserved and restored in stages.\n\nNote: this entry is demo content included to show the Heritage Sites feature, and should be replaced with text approved by the responsible cultural authority before real publication.',
+      },
+    ],
+  },
+];
+
 export const SCENES = [
   {
     slug: 'entrance',

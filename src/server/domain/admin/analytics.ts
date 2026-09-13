@@ -126,6 +126,7 @@ export async function getContentCounts() {
       (SELECT count(*)::int FROM scenes)                                    AS scenes,
       (SELECT count(*)::int FROM hotspots)                                  AS hotspots,
       (SELECT count(*)::int FROM points_of_interest)                        AS pois,
+      (SELECT count(*)::int FROM heritage_sites)                            AS heritage_sites,
       (SELECT count(*)::int FROM events)                                    AS events,
       (SELECT count(*)::int FROM media_assets)                              AS media
   `);
@@ -141,6 +142,7 @@ export async function getContentCounts() {
     scenes: num('scenes'),
     hotspots: num('hotspots'),
     pois: num('pois'),
+    heritageSites: num('heritage_sites'),
     events: num('events'),
     media: num('media'),
   };
@@ -183,11 +185,17 @@ export async function getTranslationCoverage(locale: string) {
              count(*) FILTER (WHERE t.locale IS NOT NULL)::int AS done
       FROM events x
       LEFT JOIN event_translations t ON t.event_id = x.id AND t.locale = ${locale}
+    ), h AS (
+      SELECT count(*)::int AS total,
+             count(*) FILTER (WHERE t.locale IS NOT NULL)::int AS done
+      FROM heritage_sites x
+      LEFT JOIN heritage_site_translations t ON t.heritage_site_id = x.id AND t.locale = ${locale}
     )
     SELECT 'destinations' AS entity, total, done FROM d
     UNION ALL SELECT 'tours', total, done FROM tr
     UNION ALL SELECT 'scenes', total, done FROM s
     UNION ALL SELECT 'pois', total, done FROM p
+    UNION ALL SELECT 'heritage sites', total, done FROM h
     UNION ALL SELECT 'events', total, done FROM e
   `);
 
