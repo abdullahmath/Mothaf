@@ -24,6 +24,7 @@ import { createTour, setTourStatus } from '@/server/domain/admin/tours';
 import { createScene, reorderScenes, setSceneLinks } from '@/server/domain/admin/scenes';
 import { createHotspot } from '@/server/domain/admin/hotspots';
 import { createCategory, createPoi } from '@/server/domain/admin/pois';
+import { addScheduleItem, createEvent } from '@/server/domain/admin/events';
 import { getAnalyticsSummary } from '@/server/domain/admin/analytics';
 
 /**
@@ -613,6 +614,124 @@ describe('POI category scoping', () => {
       createPoi(
         { destinationId: destination.id, categoryId: category, slug: 'matched', status: 'draft', tags: [] },
         [{ locale: 'en', title: 'Matched' }],
+      ),
+    ).resolves.toBeTruthy();
+  });
+});
+
+describe('event tour and schedule scoping', () => {
+  it('refuses an event linked to another destination\'s tour', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const home = await makeDestination(db, { slug: 'home-event' });
+    const elsewhere = await makeDestination(db, { slug: 'elsewhere-event' });
+    const foreignTour = await makeTour(db, elsewhere.id, { slug: 'foreign-tour' });
+
+    const error = await createEvent(
+      {
+        destinationId: home.id,
+        tourId: foreignTour.id,
+        slug: 'mismatched-event',
+        status: 'draft',
+        startsAt: new Date('2026-06-01T10:00:00Z'),
+        endsAt: new Date('2026-06-01T12:00:00Z'),
+        timezone: 'UTC',
+      },
+      [{ locale: 'en', title: 'Mismatched event' }],
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('validation');
+  });
+
+  it('accepts an event linked to its own destination\'s tour', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const destination = await makeDestination(db, { slug: 'own-event' });
+    const tour = await makeTour(db, destination.id, { slug: 'own-event-tour' });
+
+    await expect(
+      createEvent(
+        {
+          destinationId: destination.id,
+          tourId: tour.id,
+          slug: 'matched-event',
+          status: 'draft',
+          startsAt: new Date('2026-06-01T10:00:00Z'),
+          endsAt: new Date('2026-06-01T12:00:00Z'),
+          timezone: 'UTC',
+        },
+        [{ locale: 'en', title: 'Matched event' }],
+      ),
+    ).resolves.toBeTruthy();
+  });
+
+  it('refuses a schedule item pointing at a scene in another destination', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const media = await makeMedia(db);
+    const home = await makeDestination(db, { slug: 'home-schedule' });
+    const elsewhere = await makeDestination(db, { slug: 'elsewhere-schedule' });
+    const foreignTour = await makeTour(db, elsewhere.id, { slug: 'foreign-schedule-tour' });
+    const foreignScene = await makeScene(db, foreignTour.id, { backgroundMediaId: media.id });
+
+    const eventId = await createEvent(
+      {
+        destinationId: home.id,
+        slug: 'home-schedule-event',
+        status: 'draft',
+        startsAt: new Date('2026-06-01T10:00:00Z'),
+        endsAt: new Date('2026-06-01T18:00:00Z'),
+        timezone: 'UTC',
+      },
+      [{ locale: 'en', title: 'Home event' }],
+    );
+
+    const error = await addScheduleItem(
+      {
+        eventId,
+        startsAt: new Date('2026-06-01T11:00:00Z'),
+        sceneId: foreignScene.id,
+      },
+      [{ locale: 'en', title: 'Item' }],
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('validation');
+  });
+
+  it('accepts a schedule item pointing at a scene in the same destination', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const media = await makeMedia(db);
+    const destination = await makeDestination(db, { slug: 'own-schedule' });
+    const tour = await makeTour(db, destination.id, { slug: 'own-schedule-tour' });
+    const scene = await makeScene(db, tour.id, { backgroundMediaId: media.id });
+
+    const eventId = await createEvent(
+      {
+        destinationId: destination.id,
+        slug: 'own-schedule-event',
+        status: 'draft',
+        startsAt: new Date('2026-06-01T10:00:00Z'),
+        endsAt: new Date('2026-06-01T18:00:00Z'),
+        timezone: 'UTC',
+      },
+      [{ locale: 'en', title: 'Own event' }],
+    );
+
+    await expect(
+      addScheduleItem(
+        { eventId, startsAt: new Date('2026-06-01T11:00:00Z'), sceneId: scene.id },
+        [{ locale: 'en', title: 'Item' }],
       ),
     ).resolves.toBeTruthy();
   });

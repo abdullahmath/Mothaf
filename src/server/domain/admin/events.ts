@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../../db';
 import {
@@ -8,6 +8,8 @@ import {
   eventScheduleItemTranslations,
   events,
   eventTranslations,
+  scenes,
+  tours,
 } from '../../db/schema';
 import { hasPermission } from '../../auth/permissions';
 import { requirePermission } from '../guard';
@@ -78,6 +80,27 @@ export const eventInputSchema = z
 
 export type EventInput = z.infer<typeof eventInputSchema>;
 
+/**
+ * Confirms the related tour actually belongs to the event's own destination.
+ *
+ * Without this, an event could link to another destination's tour — the
+ * public event page would then send "explore the venue" to the wrong place.
+ * Same class of gap as `assertCategoryInDestination` for POIs.
+ */
+async function assertTourInDestination(tourId: string, destinationId: string): Promise<void> {
+  const db = await getDb();
+  const [tour] = await db
+    .select({ id: tours.id })
+    .from(tours)
+    .where(and(eq(tours.id, tourId), eq(tours.destinationId, destinationId)))
+    .limit(1);
+  if (!tour) {
+    throw validation('That tour belongs to a different destination.', {
+      tourId: 'Choose a tour from this destination',
+    });
+  }
+}
+
 export async function listEventsForAdmin(destinationId?: string) {
   await requirePermission('event:read');
   const db = await getDb();
@@ -141,6 +164,7 @@ export async function createEvent(
     slug: input.slug,
     scope: eq(events.destinationId, input.destinationId),
   });
+  if (input.tourId) await assertTourInDestination(input.tourId, input.destinationId);
 
   const status =
     input.status === 'published' && !hasPermission(auth.user.role, 'event:publish')
@@ -201,6 +225,7 @@ export async function updateEvent(
     scope: eq(events.destinationId, input.destinationId),
     excludeId: id,
   });
+  if (input.tourId) await assertTourInDestination(input.tourId, input.destinationId);
 
   const status =
     input.status === 'published' && !hasPermission(auth.user.role, 'event:publish')
@@ -276,7 +301,7 @@ export async function addScheduleItem(
   const db = await getDb();
 
   const [event] = await db
-    .select({ startsAt: events.startsAt, endsAt: events.endsAt })
+    .select({ startsAt: events.startsAt, endsAt: events.endsAt, destinationId: events.destinationId })
     .from(events)
     .where(eq(events.id, input.eventId))
     .limit(1);
@@ -288,6 +313,23 @@ export async function addScheduleItem(
     throw validation('This item falls outside the event’s dates.', {
       startsAt: 'Choose a time within the event',
     });
+  }
+
+  // The scene, if any, must belong to the same destination as the event —
+  // otherwise a programme item could point at a scene nobody can reach from
+  // this event's own venue.
+  if (input.sceneId) {
+    const [scene] = await db
+      .select({ id: scenes.id })
+      .from(scenes)
+      .innerJoin(tours, eq(tours.id, scenes.tourId))
+      .where(and(eq(scenes.id, input.sceneId), eq(tours.destinationId, event.destinationId)))
+      .limit(1);
+    if (!scene) {
+      throw validation('That scene belongs to a different destination.', {
+        sceneId: 'Choose a scene from this event’s destination',
+      });
+    }
   }
 
   const [row] = await db
