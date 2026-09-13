@@ -50,6 +50,7 @@ export default async function ProtectedAdminLayout({
         account: t('admin.account'),
         signOut: t('auth.signOut'),
         viewSite: t('admin.preview'),
+        languageSwitcher: t('a11y.languageSwitcher'),
       }}
     >
       {children}

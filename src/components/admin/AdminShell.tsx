@@ -3,6 +3,7 @@ import type { Permission } from '@/server/auth/permissions';
 import type { AuthUser } from '@/server/auth/session';
 import type { AppLocale } from '@/lib/i18n/config';
 import { Wordmark } from '../chrome/Wordmark';
+import { LocaleSwitcher } from '../chrome/LocaleSwitcher';
 import { LogoutButton } from './LogoutButton';
 
 /**
@@ -31,6 +32,7 @@ export type AdminShellLabels = {
   account: string;
   signOut: string;
   viewSite: string;
+  languageSwitcher: string;
 };
 
 export function AdminShell({
@@ -116,6 +118,9 @@ export function AdminShell({
             </nav>
 
             <div className="grid gap-2 border-t border-[var(--hairline)] pt-4 md:mt-auto">
+              <div className="px-2.5">
+                <LocaleSwitcher locale={locale} label={labels.languageSwitcher} />
+              </div>
               <Link
                 href={`/${locale}`}
                 className="rounded-md px-2.5 py-2 text-sm text-lime-faint transition-colors hover:text-lime"
