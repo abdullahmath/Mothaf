@@ -32,6 +32,7 @@
   "destination": {
     "toursTitle": "Virtual tours",
     "toursEmpty": "No tours have been published for this destination yet.",
+    "heritageSitesTitle": "Heritage sites",
     "poisTitle": "Points of interest",
     "eventsTitle": "Events at this site",
     "aboutTitle": "About",
@@ -135,6 +136,7 @@
     "scenes": "Scenes",
     "hotspots": "Hotspots",
     "pois": "Points of interest",
+    "heritageSites": "Heritage sites",
     "media": "Media library",
     "events": "Events",
     "translations": "Translations",

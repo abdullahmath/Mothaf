@@ -15,6 +15,13 @@
       "when": 1788460182551,
       "tag": "0001_dizzy_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789293263071,
+      "tag": "0002_striped_cerise",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { LOCALES } from '@/lib/i18n/config';
 import { listDestinationSlugs, listPublishedTourPaths } from '@/server/domain/public/destinations';
+import { listPublishedHeritageSitePaths } from '@/server/domain/public/heritage';
 import { env } from '@/server/config/env';
 
 // Queries the database, so this must stay dynamic — statically generating it
@@ -10,9 +11,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = env().APP_ORIGIN;
-  const [destinationSlugs, tourPaths] = await Promise.all([
+  const [destinationSlugs, tourPaths, heritageSitePaths] = await Promise.all([
     listDestinationSlugs(),
     listPublishedTourPaths(),
+    listPublishedHeritageSitePaths(),
   ]);
 
   const entries: MetadataRoute.Sitemap = [];
@@ -26,6 +28,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const { destination, tour } of tourPaths) {
       entries.push({
         url: `${origin}/${locale}/tour/${destination}/${tour}`,
+        changeFrequency: 'monthly',
+      });
+    }
+    for (const { destination, site } of heritageSitePaths) {
+      entries.push({
+        url: `${origin}/${locale}/destinations/${destination}/heritage/${site}`,
         changeFrequency: 'monthly',
       });
     }

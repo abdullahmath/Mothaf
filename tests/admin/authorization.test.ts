@@ -24,6 +24,12 @@ import { createTour, setTourStatus } from '@/server/domain/admin/tours';
 import { createScene, reorderScenes, setSceneLinks } from '@/server/domain/admin/scenes';
 import { createHotspot, updateHotspot } from '@/server/domain/admin/hotspots';
 import { createCategory, createPoi } from '@/server/domain/admin/pois';
+import {
+  createHeritageSite,
+  deleteHeritageSite,
+  getHeritageSiteForAdmin,
+  updateHeritageSite,
+} from '@/server/domain/admin/heritage';
 import { addScheduleItem, createEvent } from '@/server/domain/admin/events';
 import { getAnalyticsSummary } from '@/server/domain/admin/analytics';
 
@@ -784,6 +790,147 @@ describe('event tour and schedule scoping', () => {
         [{ locale: 'en', title: 'Item' }],
       ),
     ).resolves.toBeTruthy();
+  });
+});
+
+describe('heritage sites', () => {
+  it('refuses an analyst trying to create one', async () => {
+    const user = await makeUser(db, 'analyst');
+    actAs({ id: user.id, role: 'analyst' });
+
+    const destination = await makeDestination(db);
+    const error = await createHeritageSite(
+      { destinationId: destination.id, slug: 'refused-site', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'Refused' }],
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('forbidden');
+  });
+
+  it('refuses two sites in the same destination sharing a slug', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const destination = await makeDestination(db);
+    await createHeritageSite(
+      { destinationId: destination.id, slug: 'the-fort', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'The fort' }],
+    );
+
+    const error = await createHeritageSite(
+      { destinationId: destination.id, slug: 'the-fort', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'Another fort' }],
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('conflict');
+  });
+
+  it('allows the same slug reused in a different destination', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const first = await makeDestination(db, { slug: 'first-place' });
+    const second = await makeDestination(db, { slug: 'second-place' });
+
+    await createHeritageSite(
+      { destinationId: first.id, slug: 'shared-slug', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'One' }],
+    );
+
+    await expect(
+      createHeritageSite(
+        { destinationId: second.id, slug: 'shared-slug', status: 'draft', galleryMediaIds: [] },
+        [{ locale: 'en', title: 'Two' }],
+      ),
+    ).resolves.toBeTruthy();
+  });
+
+  it('refuses a gallery id that does not correspond to a real media asset', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const destination = await makeDestination(db);
+    const error = await createHeritageSite(
+      {
+        destinationId: destination.id,
+        slug: 'bad-gallery',
+        status: 'draft',
+        galleryMediaIds: ['00000000-0000-0000-0000-000000000000'],
+      },
+      [{ locale: 'en', title: 'Bad gallery' }],
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('validation');
+  });
+
+  it('creates, reads back and updates a site with a real gallery', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const destination = await makeDestination(db);
+    const photoA = await makeMedia(db, { kind: 'image' });
+    const photoB = await makeMedia(db, { kind: 'image' });
+
+    const id = await createHeritageSite(
+      {
+        destinationId: destination.id,
+        slug: 'citadel',
+        status: 'published',
+        coverMediaId: photoA.id,
+        galleryMediaIds: [photoA.id, photoB.id],
+      },
+      [
+        { locale: 'en', title: 'The citadel', shortDescription: 'A hilltop fortress.' },
+        { locale: 'ar', title: 'القلعة' },
+      ],
+    );
+
+    const loaded = await getHeritageSiteForAdmin(id);
+    expect(loaded.galleryMediaIds).toEqual([photoA.id, photoB.id]);
+    expect(loaded.translations.find((t) => t.locale === 'en')?.title).toBe('The citadel');
+
+    // Dropping photoA from the gallery on update must actually remove it, not
+    // just append photoB again.
+    await updateHeritageSite(
+      id,
+      {
+        destinationId: destination.id,
+        slug: 'citadel',
+        status: 'published',
+        coverMediaId: photoA.id,
+        galleryMediaIds: [photoB.id],
+      },
+      [{ locale: 'en', title: 'The citadel' }],
+    );
+
+    const updated = await getHeritageSiteForAdmin(id);
+    expect(updated.galleryMediaIds).toEqual([photoB.id]);
+  });
+
+  it('deletes a site', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const destination = await makeDestination(db);
+    const id = await createHeritageSite(
+      { destinationId: destination.id, slug: 'to-delete', status: 'draft', galleryMediaIds: [] },
+      [{ locale: 'en', title: 'Gone soon' }],
+    );
+
+    await deleteHeritageSite(id);
+
+    const error = await getHeritageSiteForAdmin(id).then(() => null).catch((e) => e);
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('not_found');
   });
 });
 

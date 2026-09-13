@@ -10,6 +10,7 @@ export * from './auth';
 export * from './media';
 export * from './content';
 export * from './poi';
+export * from './heritage';
 export * from './events';
 export * from './analytics';
 export * from './relations';

@@ -79,6 +79,28 @@ export type PoiCardDTO = {
   category: { slug: string; name: string; color: string; icon: string } | null;
 };
 
+export type HeritageSiteCardDTO = {
+  id: string;
+  slug: string;
+  title: string;
+  shortDescription: string | null;
+  cover: MediaDTO | null;
+};
+
+export type HeritageSiteDetailDTO = {
+  id: string;
+  slug: string;
+  destinationSlug: string;
+  destinationName: string;
+  title: string;
+  shortDescription: string | null;
+  description: string | null;
+  cover: MediaDTO | null;
+  gallery: MediaDTO[];
+  latitude: number | null;
+  longitude: number | null;
+};
+
 export type DestinationPageDTO = {
   id: string;
   slug: string;
@@ -94,6 +116,7 @@ export type DestinationPageDTO = {
   /** Bare Sketchfab model id. `null` when the destination has no 3D scan. */
   sketchfabModelId: string | null;
   tours: TourCardDTO[];
+  heritageSites: HeritageSiteCardDTO[];
   pois: PoiCardDTO[];
   events: EventCardDTO[];
 };

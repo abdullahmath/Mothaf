@@ -21,6 +21,7 @@ import {
   pointsOfInterest,
   scenePois,
 } from './poi';
+import { heritageSiteMedia, heritageSiteTranslations, heritageSites } from './heritage';
 import {
   eventMedia,
   events,
@@ -60,6 +61,7 @@ export const destinationsRelations = relations(destinations, ({ one, many }) => 
   tours: many(tours),
   pois: many(pointsOfInterest),
   poiCategories: many(poiCategories),
+  heritageSites: many(heritageSites),
   events: many(events),
   coverMedia: one(mediaAssets, {
     fields: [destinations.coverMediaId],
@@ -194,6 +196,34 @@ export const poiMediaRelations = relations(poiMedia, ({ one }) => ({
 export const scenePoisRelations = relations(scenePois, ({ one }) => ({
   scene: one(scenes, { fields: [scenePois.sceneId], references: [scenes.id] }),
   poi: one(pointsOfInterest, { fields: [scenePois.poiId], references: [pointsOfInterest.id] }),
+}));
+
+export const heritageSitesRelations = relations(heritageSites, ({ one, many }) => ({
+  destination: one(destinations, {
+    fields: [heritageSites.destinationId],
+    references: [destinations.id],
+  }),
+  coverMedia: one(mediaAssets, {
+    fields: [heritageSites.coverMediaId],
+    references: [mediaAssets.id],
+  }),
+  translations: many(heritageSiteTranslations),
+  media: many(heritageSiteMedia),
+}));
+
+export const heritageSiteTranslationsRelations = relations(heritageSiteTranslations, ({ one }) => ({
+  heritageSite: one(heritageSites, {
+    fields: [heritageSiteTranslations.heritageSiteId],
+    references: [heritageSites.id],
+  }),
+}));
+
+export const heritageSiteMediaRelations = relations(heritageSiteMedia, ({ one }) => ({
+  heritageSite: one(heritageSites, {
+    fields: [heritageSiteMedia.heritageSiteId],
+    references: [heritageSites.id],
+  }),
+  media: one(mediaAssets, { fields: [heritageSiteMedia.mediaId], references: [mediaAssets.id] }),
 }));
 
 export const eventsRelations = relations(events, ({ one, many }) => ({

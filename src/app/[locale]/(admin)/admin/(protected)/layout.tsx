@@ -43,6 +43,7 @@ export default async function ProtectedAdminLayout({
         destinations: t('admin.destinations'),
         tours: t('admin.tours'),
         pois: t('admin.pois'),
+        heritageSites: t('admin.heritageSites'),
         media: t('admin.media'),
         events: t('admin.events'),
         analytics: t('admin.analytics'),

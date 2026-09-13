@@ -72,6 +72,76 @@ export default async function DestinationPage({ params }: { params: Params }) {
 
       <div className="mx-auto grid max-w-[1400px] gap-16 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="grid gap-16">
+          {/* ---- About and history ----------------------------------------- */}
+          {(page.description || page.historicalContext) && (
+            <section className="grid gap-10">
+              {page.description && (
+                <div>
+                  <h2 className="eyebrow mb-3">{t('destination.aboutTitle')}</h2>
+                  <div className="prose-body max-w-prose">
+                    {page.description.split('\n\n').map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {page.historicalContext && (
+                <div className="border-s-2 border-verdigris-deep ps-5">
+                  <h2 className="eyebrow mb-3">{t('destination.historyTitle')}</h2>
+                  <div className="prose-body max-w-prose">
+                    {page.historicalContext.split('\n\n').map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ---- Heritage sites --------------------------------------------- */}
+          {page.heritageSites.length > 0 && (
+            <section>
+              <header className="mb-8 flex items-baseline justify-between border-b border-[var(--hairline)] pb-4">
+                <h2 className="display text-2xl text-lime">{t('destination.heritageSitesTitle')}</h2>
+                <span className="readout">{String(page.heritageSites.length).padStart(2, '0')}</span>
+              </header>
+
+              <ul className="grid gap-6 sm:grid-cols-2">
+                {page.heritageSites.map((site) => (
+                  <li key={site.id}>
+                    <Link
+                      href={`/${locale}/destinations/${page.slug}/heritage/${site.slug}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-16/10 overflow-hidden rounded-md border border-[var(--hairline)] bg-stone">
+                        {site.cover ? (
+                          <img
+                            src={site.cover.src}
+                            srcSet={buildSrcSet(site.cover.sources)}
+                            sizes="(min-width: 640px) 40vw, 92vw"
+                            alt={site.cover.alt ?? ''}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                          />
+                        ) : (
+                          <div className="h-full w-full bg-gradient-to-br from-stone-2 to-ink" />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[color-mix(in_oklab,var(--color-ink)_70%,transparent)] to-transparent" />
+                      </div>
+                      <h3 className="display mt-3 text-lg text-lime transition-colors group-hover:text-verdigris-bright">
+                        {site.title}
+                      </h3>
+                      {site.shortDescription && (
+                        <p className="mt-1 text-sm text-lime-dim">{site.shortDescription}</p>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {/* ---- Tours --------------------------------------------------- */}
           <section>
             <header className="mb-8 flex items-baseline justify-between border-b border-[var(--hairline)] pb-4">
@@ -127,32 +197,6 @@ export default async function DestinationPage({ params }: { params: Params }) {
           {/* ---- 3D model --------------------------------------------------- */}
           {page.sketchfabModelId && (
             <Model3DEmbed modelId={page.sketchfabModelId} title={page.name} t={t} />
-          )}
-
-          {/* ---- About and history --------------------------------------- */}
-          {(page.description || page.historicalContext) && (
-            <section className="grid gap-10">
-              {page.description && (
-                <div>
-                  <h2 className="eyebrow mb-3">{t('destination.aboutTitle')}</h2>
-                  <div className="prose-body max-w-prose">
-                    {page.description.split('\n\n').map((paragraph, index) => (
-                      <p key={index}>{paragraph}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {page.historicalContext && (
-                <div className="border-s-2 border-verdigris-deep ps-5">
-                  <h2 className="eyebrow mb-3">{t('destination.historyTitle')}</h2>
-                  <div className="prose-body max-w-prose">
-                    {page.historicalContext.split('\n\n').map((paragraph, index) => (
-                      <p key={index}>{paragraph}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
           )}
         </div>
 

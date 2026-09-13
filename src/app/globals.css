@@ -538,6 +538,33 @@ body {
 }
 
 /* ==========================================================================
+   Gallery lightbox
+   ========================================================================== */
+
+.heritage-lightbox {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  width: min(1100px, 94vw);
+  height: min(85dvh, 900px);
+  max-width: none;
+  max-height: none;
+  color: var(--color-lime);
+  animation: fade-in 0.18s var(--ease-out-quart);
+}
+
+.heritage-lightbox::backdrop {
+  background: color-mix(in oklab, #000 70%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
    Admin
    --------------------------------------------------------------------------
    The admin shares the visitor palette rather than adopting a separate "app"

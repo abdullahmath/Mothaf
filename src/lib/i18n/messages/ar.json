@@ -32,6 +32,7 @@
   "destination": {
     "toursTitle": "الجولات الافتراضية",
     "toursEmpty": "لم تُنشر أي جولة لهذه الوجهة بعد.",
+    "heritageSitesTitle": "مناطق التراث",
     "poisTitle": "معالم الموقع",
     "eventsTitle": "فعاليات في هذا الموقع",
     "aboutTitle": "نبذة",
@@ -135,6 +136,7 @@
     "scenes": "المشاهد",
     "hotspots": "العلامات التفاعلية",
     "pois": "معالم الموقع",
+    "heritageSites": "مناطق التراث",
     "media": "مكتبة الوسائط",
     "events": "الفعاليات",
     "translations": "الترجمات",

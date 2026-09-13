@@ -49,6 +49,13 @@ import {
   updatePoi,
 } from '../domain/admin/pois';
 import {
+  createHeritageSite,
+  deleteHeritageSite,
+  heritageSiteInputSchema,
+  HERITAGE_SITE_TRANSLATION_FIELDS,
+  updateHeritageSite,
+} from '../domain/admin/heritage';
+import {
   addScheduleItem,
   createEvent,
   deleteEvent,
@@ -532,6 +539,59 @@ export async function savePoiCategoryAction(
   } catch (error) {
     return toResult(error);
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Heritage sites                                                            */
+/* -------------------------------------------------------------------------- */
+
+export async function saveHeritageSiteAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await assertSameOrigin();
+
+  const id = field(formData, 'id');
+  const locale = field(formData, 'locale') ?? 'ar';
+
+  const parsed = heritageSiteInputSchema.safeParse({
+    destinationId: field(formData, 'destinationId'),
+    slug: field(formData, 'slug'),
+    status: field(formData, 'status'),
+    coverMediaId: nullableField(formData, 'coverMediaId'),
+    latitude: nullableField(formData, 'latitude'),
+    longitude: nullableField(formData, 'longitude'),
+    galleryMediaIds: formData
+      .getAll('galleryMediaIds')
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+  });
+  if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
+
+  const translations = parseTranslationFields(formData, HERITAGE_SITE_TRANSLATION_FIELDS, LOCALES);
+
+  try {
+    if (id) {
+      await updateHeritageSite(id, parsed.data, translations);
+      revalidateContent(locale);
+      return { ok: true, id, message: 'Saved.' };
+    }
+    const created = await createHeritageSite(parsed.data, translations);
+    revalidateContent(locale);
+    redirect(`/${locale}/admin/heritage-sites/${created}`);
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'digest' in error) throw error;
+    return toResult(error);
+  }
+}
+
+export async function deleteHeritageSiteAction(formData: FormData): Promise<void> {
+  await assertSameOrigin();
+  const id = field(formData, 'id');
+  const locale = field(formData, 'locale') ?? 'ar';
+  if (!id) return;
+  await deleteHeritageSite(id);
+  revalidateContent(locale);
+  redirect(`/${locale}/admin/heritage-sites`);
 }
 
 /* -------------------------------------------------------------------------- */

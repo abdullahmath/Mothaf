@@ -5,6 +5,8 @@ import { getDb } from '../../db';
 import {
   destinations,
   destinationTranslations,
+  heritageSiteTranslations,
+  heritageSites,
   mediaAssets,
   mediaTranslations,
   poiCategories,
@@ -21,6 +23,7 @@ import type { MediaDTO } from '@/lib/tour/types';
 import type {
   DestinationCardDTO,
   DestinationPageDTO,
+  HeritageSiteCardDTO,
   PoiCardDTO,
   TourCardDTO,
 } from '@/lib/content/types';
@@ -145,7 +148,7 @@ async function getDestinationPageUncached(
   if (!destination) throw notFound('Destination not found');
   const defaultLocale = destination.defaultLocale;
 
-  const [destTr, tourRows, poiRows, events] = await Promise.all([
+  const [destTr, tourRows, poiRows, heritageSiteRows, events] = await Promise.all([
     db
       .select()
       .from(destinationTranslations)
@@ -165,53 +168,70 @@ async function getDestinationPageUncached(
         ),
       )
       .orderBy(asc(pointsOfInterest.position)),
+    db
+      .select()
+      .from(heritageSites)
+      .where(
+        and(eq(heritageSites.destinationId, destination.id), eq(heritageSites.status, 'published')),
+      )
+      .orderBy(asc(heritageSites.position), asc(heritageSites.slug)),
     listEventsForDestination(destination.id, locale, defaultLocale),
   ]);
 
   const tourIds = tourRows.map((t) => t.id);
   const poiIds = poiRows.map((p) => p.id);
+  const heritageSiteIds = heritageSiteRows.map((h) => h.id);
   const categoryIds = [
     ...new Set(poiRows.map((p) => p.categoryId).filter((id): id is string => id !== null)),
   ];
 
-  const [tourTr, sceneCounts, poiTr, categoryRows, categoryTr, media] = await Promise.all([
-    tourIds.length
-      ? db.select().from(tourTranslations).where(inArray(tourTranslations.tourId, tourIds))
-      : [],
-    tourIds.length
-      ? db
-          .select({ tourId: scenes.tourId, value: count() })
-          .from(scenes)
-          .where(and(inArray(scenes.tourId, tourIds), eq(scenes.status, 'published')))
-          .groupBy(scenes.tourId)
-      : [],
-    poiIds.length
-      ? db.select().from(poiTranslations).where(inArray(poiTranslations.poiId, poiIds))
-      : [],
-    categoryIds.length
-      ? db.select().from(poiCategories).where(inArray(poiCategories.id, categoryIds))
-      : [],
-    categoryIds.length
-      ? db
-          .select()
-          .from(poiCategoryTranslations)
-          .where(inArray(poiCategoryTranslations.categoryId, categoryIds))
-      : [],
-    loadMedia(
-      [
-        destination.coverMediaId,
-        ...tourRows.map((t) => t.coverMediaId),
-        ...poiRows.map((p) => p.coverMediaId),
-      ],
-      locale,
-      defaultLocale,
-    ),
-  ]);
+  const [tourTr, sceneCounts, poiTr, categoryRows, categoryTr, heritageSiteTr, media] =
+    await Promise.all([
+      tourIds.length
+        ? db.select().from(tourTranslations).where(inArray(tourTranslations.tourId, tourIds))
+        : [],
+      tourIds.length
+        ? db
+            .select({ tourId: scenes.tourId, value: count() })
+            .from(scenes)
+            .where(and(inArray(scenes.tourId, tourIds), eq(scenes.status, 'published')))
+            .groupBy(scenes.tourId)
+        : [],
+      poiIds.length
+        ? db.select().from(poiTranslations).where(inArray(poiTranslations.poiId, poiIds))
+        : [],
+      categoryIds.length
+        ? db.select().from(poiCategories).where(inArray(poiCategories.id, categoryIds))
+        : [],
+      categoryIds.length
+        ? db
+            .select()
+            .from(poiCategoryTranslations)
+            .where(inArray(poiCategoryTranslations.categoryId, categoryIds))
+        : [],
+      heritageSiteIds.length
+        ? db
+            .select()
+            .from(heritageSiteTranslations)
+            .where(inArray(heritageSiteTranslations.heritageSiteId, heritageSiteIds))
+        : [],
+      loadMedia(
+        [
+          destination.coverMediaId,
+          ...tourRows.map((t) => t.coverMediaId),
+          ...poiRows.map((p) => p.coverMediaId),
+          ...heritageSiteRows.map((h) => h.coverMediaId),
+        ],
+        locale,
+        defaultLocale,
+      ),
+    ]);
 
   const tourTrBy = groupByParent(tourTr, 'tourId');
   const sceneCountBy = new Map(sceneCounts.map((r) => [r.tourId, Number(r.value)]));
   const poiTrBy = groupByParent(poiTr, 'poiId');
   const categoryTrBy = groupByParent(categoryTr, 'categoryId');
+  const heritageSiteTrBy = groupByParent(heritageSiteTr, 'heritageSiteId');
 
   const categoryById = new Map(
     categoryRows.map((category) => {
@@ -256,6 +276,17 @@ async function getDestinationPageUncached(
     };
   });
 
+  const heritageSiteCards: HeritageSiteCardDTO[] = heritageSiteRows.map((site) => {
+    const tr = mergeTranslations(heritageSiteTrBy.get(site.id) ?? [], locale, defaultLocale);
+    return {
+      id: site.id,
+      slug: site.slug,
+      title: tr.title ?? site.slug,
+      shortDescription: tr.shortDescription ?? null,
+      cover: site.coverMediaId ? (media.get(site.coverMediaId) ?? null) : null,
+    };
+  });
+
   return {
     id: destination.id,
     slug: destination.slug,
@@ -270,6 +301,7 @@ async function getDestinationPageUncached(
     countryCode: destination.countryCode,
     sketchfabModelId: destination.sketchfabModelId,
     tours: tourCards,
+    heritageSites: heritageSiteCards,
     pois: poiCards,
     events,
   };
