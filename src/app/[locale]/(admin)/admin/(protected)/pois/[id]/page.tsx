@@ -4,6 +4,7 @@ import { getTranslator, isAppLocale, type AppLocale } from '@/lib/i18n';
 import { getPoiForAdmin, listCategories } from '@/server/domain/admin/pois';
 import { listDestinationsForAdmin } from '@/server/domain/admin/destinations';
 import { listMedia } from '@/server/domain/admin/media';
+import { mediaUrl } from '@/server/media/urls';
 import { isDomainError } from '@/server/domain/errors';
 import { AdminPage } from '@/components/admin/AdminPage';
 import { PoiForm } from '@/components/admin/PoiForm';
@@ -77,6 +78,9 @@ export default async function PoiEditPage({
     .map((asset) => ({
       value: asset.id,
       label: asset.originalFilename ?? `${asset.kind} (${asset.id.slice(0, 8)})`,
+      thumbUrl: mediaUrl(
+        asset.variants.find((v) => v.name === 'thumb')?.storageKey ?? asset.storageKey,
+      ),
     }));
 
   if (isNew) {
@@ -112,6 +116,7 @@ export default async function PoiEditPage({
             latitude: null,
             longitude: null,
             tags: '',
+            galleryMediaIds: [],
             translations: {},
           }}
         />
@@ -151,6 +156,7 @@ export default async function PoiEditPage({
           latitude: poi.latitude,
           longitude: poi.longitude,
           tags: poi.tags.join(', '),
+          galleryMediaIds: poi.galleryMediaIds,
           translations: toTranslationValues(poi.translations),
         }}
       />

@@ -1,13 +1,15 @@
 import 'server-only';
 
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../../db';
 import {
+  eventMedia,
   eventScheduleItems,
   eventScheduleItemTranslations,
   events,
   eventTranslations,
+  mediaAssets,
   scenes,
   tours,
 } from '../../db/schema';
@@ -72,6 +74,8 @@ export const eventInputSchema = z
     coverMediaId: z.string().uuid().nullable().optional(),
     latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
     longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
+    /** Ids from the media library, in display order. */
+    galleryMediaIds: z.array(z.string().uuid()).max(50).default([]),
   })
   .refine((value) => value.endsAt >= value.startsAt, {
     message: 'The end date must not be before the start date.',
@@ -79,6 +83,42 @@ export const eventInputSchema = z
   });
 
 export type EventInput = z.infer<typeof eventInputSchema>;
+
+/**
+ * Replaces an event's gallery.
+ *
+ * Media is a shared library, not destination-scoped, so existence is the
+ * only requirement — but it *is* required: a client-supplied id list must
+ * not be trusted to already exist, or a stale or forged id would sit in the
+ * gallery as a silent broken image.
+ */
+async function replaceGallery(eventId: string, mediaIds: string[]): Promise<void> {
+  const db = await getDb();
+  const uniqueIds = [...new Set(mediaIds)];
+
+  if (uniqueIds.length > 0) {
+    const found = await db.select({ id: mediaAssets.id }).from(mediaAssets).where(inArray(mediaAssets.id, uniqueIds));
+    if (found.length !== uniqueIds.length) {
+      throw validation('One of the selected gallery images no longer exists.', {
+        galleryMediaIds: 'Choose files from the media library',
+      });
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(eventMedia).where(eq(eventMedia.eventId, eventId));
+    if (uniqueIds.length > 0) {
+      await tx.insert(eventMedia).values(
+        uniqueIds.map((mediaId, index) => ({
+          eventId,
+          mediaId,
+          role: 'gallery' as const,
+          position: index,
+        })),
+      );
+    }
+  });
+}
 
 /**
  * Confirms the related tour actually belongs to the event's own destination.
@@ -127,13 +167,18 @@ export async function getEventForAdmin(id: string) {
   const [event] = await db.select().from(events).where(eq(events.id, id)).limit(1);
   if (!event) throw notFound('Event not found');
 
-  const [translations, schedule] = await Promise.all([
+  const [translations, schedule, galleryRows] = await Promise.all([
     db.select().from(eventTranslations).where(eq(eventTranslations.eventId, id)),
     db
       .select()
       .from(eventScheduleItems)
       .where(eq(eventScheduleItems.eventId, id))
       .orderBy(asc(eventScheduleItems.startsAt)),
+    db
+      .select({ mediaId: eventMedia.mediaId })
+      .from(eventMedia)
+      .where(eq(eventMedia.eventId, id))
+      .orderBy(asc(eventMedia.position)),
   ]);
 
   const scheduleTranslations = schedule.length
@@ -143,6 +188,7 @@ export async function getEventForAdmin(id: string) {
   return {
     ...event,
     translations,
+    galleryMediaIds: galleryRows.map((r) => r.mediaId),
     schedule: schedule.map((item) => ({
       ...item,
       translations: scheduleTranslations.filter((t) => t.itemId === item.id),
@@ -188,12 +234,15 @@ export async function createEvent(
     })
     .returning({ id: events.id });
 
-  await replaceTranslations({
-    table: eventTranslations,
-    parentColumn: eventTranslations.eventId,
-    parentId: row!.id,
-    rows: translations,
-  });
+  await Promise.all([
+    replaceTranslations({
+      table: eventTranslations,
+      parentColumn: eventTranslations.eventId,
+      parentId: row!.id,
+      rows: translations,
+    }),
+    replaceGallery(row!.id, input.galleryMediaIds),
+  ]);
 
   await recordAudit({
     actorId: auth.user.id,
@@ -235,6 +284,7 @@ export async function updateEvent(
   await db
     .update(events)
     .set({
+      destinationId: input.destinationId,
       tourId: input.tourId ?? null,
       slug: input.slug,
       status,
@@ -250,12 +300,15 @@ export async function updateEvent(
     })
     .where(eq(events.id, id));
 
-  await replaceTranslations({
-    table: eventTranslations,
-    parentColumn: eventTranslations.eventId,
-    parentId: id,
-    rows: translations,
-  });
+  await Promise.all([
+    replaceTranslations({
+      table: eventTranslations,
+      parentColumn: eventTranslations.eventId,
+      parentId: id,
+      rows: translations,
+    }),
+    replaceGallery(id, input.galleryMediaIds),
+  ]);
 
   await recordAudit({
     actorId: auth.user.id,

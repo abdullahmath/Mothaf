@@ -23,14 +23,14 @@ import {
 import { createTour, setTourStatus } from '@/server/domain/admin/tours';
 import { createScene, reorderScenes, setSceneLinks } from '@/server/domain/admin/scenes';
 import { createHotspot, updateHotspot } from '@/server/domain/admin/hotspots';
-import { createCategory, createPoi } from '@/server/domain/admin/pois';
+import { createCategory, createPoi, getPoiForAdmin, updatePoi } from '@/server/domain/admin/pois';
 import {
   createHeritageSite,
   deleteHeritageSite,
   getHeritageSiteForAdmin,
   updateHeritageSite,
 } from '@/server/domain/admin/heritage';
-import { addScheduleItem, createEvent } from '@/server/domain/admin/events';
+import { addScheduleItem, createEvent, getEventForAdmin, updateEvent } from '@/server/domain/admin/events';
 import { getAnalyticsSummary } from '@/server/domain/admin/analytics';
 
 /**
@@ -646,7 +646,7 @@ describe('POI category scoping', () => {
     );
 
     const error = await createPoi(
-      { destinationId: home.id, categoryId: foreignCategory, slug: 'mismatched', status: 'draft', tags: [] },
+      { destinationId: home.id, categoryId: foreignCategory, slug: 'mismatched', status: 'draft', tags: [], galleryMediaIds: [] },
       [{ locale: 'en', title: 'Mismatched' }],
     )
       .then(() => null)
@@ -668,10 +668,56 @@ describe('POI category scoping', () => {
 
     await expect(
       createPoi(
-        { destinationId: destination.id, categoryId: category, slug: 'matched', status: 'draft', tags: [] },
+        { destinationId: destination.id, categoryId: category, slug: 'matched', status: 'draft', tags: [], galleryMediaIds: [] },
         [{ locale: 'en', title: 'Matched' }],
       ),
     ).resolves.toBeTruthy();
+  });
+
+  it('persists a POI gallery and actually moves the POI when its destination changes', async () => {
+    // Regression: updatePoi never wrote destinationId, and there was no
+    // gallery write path at all (poiMedia existed only for the seed script).
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const origin = await makeDestination(db, { slug: 'poi-origin' });
+    const target = await makeDestination(db, { slug: 'poi-target' });
+    const photo = await makeMedia(db, { kind: 'image' });
+
+    const id = await createPoi(
+      {
+        destinationId: origin.id,
+        categoryId: null,
+        slug: 'the-gate',
+        status: 'draft',
+        tags: [],
+        galleryMediaIds: [photo.id],
+      },
+      [{ locale: 'en', title: 'The gate' }],
+    );
+
+    const loaded = await getPoiForAdmin(id);
+    expect(loaded.galleryMediaIds).toEqual([photo.id]);
+
+    await updatePoi(
+      id,
+      {
+        destinationId: target.id,
+        categoryId: null,
+        slug: 'the-gate',
+        status: 'draft',
+        tags: [],
+        galleryMediaIds: [],
+      },
+      [{ locale: 'en', title: 'The gate' }],
+    );
+
+    const [row] = await db
+      .select()
+      .from(schema.pointsOfInterest)
+      .where(eq(schema.pointsOfInterest.id, id));
+    expect(row!.destinationId).toBe(target.id);
+    expect((await getPoiForAdmin(id)).galleryMediaIds).toEqual([]);
   });
 });
 
@@ -693,6 +739,7 @@ describe('event tour and schedule scoping', () => {
         startsAt: new Date('2026-06-01T10:00:00Z'),
         endsAt: new Date('2026-06-01T12:00:00Z'),
         timezone: 'UTC',
+        galleryMediaIds: [],
       },
       [{ locale: 'en', title: 'Mismatched event' }],
     )
@@ -720,6 +767,7 @@ describe('event tour and schedule scoping', () => {
           startsAt: new Date('2026-06-01T10:00:00Z'),
           endsAt: new Date('2026-06-01T12:00:00Z'),
           timezone: 'UTC',
+          galleryMediaIds: [],
         },
         [{ locale: 'en', title: 'Matched event' }],
       ),
@@ -744,6 +792,7 @@ describe('event tour and schedule scoping', () => {
         startsAt: new Date('2026-06-01T10:00:00Z'),
         endsAt: new Date('2026-06-01T18:00:00Z'),
         timezone: 'UTC',
+        galleryMediaIds: [],
       },
       [{ locale: 'en', title: 'Home event' }],
     );
@@ -780,6 +829,7 @@ describe('event tour and schedule scoping', () => {
         startsAt: new Date('2026-06-01T10:00:00Z'),
         endsAt: new Date('2026-06-01T18:00:00Z'),
         timezone: 'UTC',
+        galleryMediaIds: [],
       },
       [{ locale: 'en', title: 'Own event' }],
     );
@@ -790,6 +840,51 @@ describe('event tour and schedule scoping', () => {
         [{ locale: 'en', title: 'Item' }],
       ),
     ).resolves.toBeTruthy();
+  });
+
+  it('persists an event gallery and actually moves the event when its destination changes', async () => {
+    // Regression: updateEvent never wrote destinationId, and there was no
+    // gallery write path at all (eventMedia existed only for the seed script).
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const origin = await makeDestination(db, { slug: 'event-origin' });
+    const target = await makeDestination(db, { slug: 'event-target' });
+    const photo = await makeMedia(db, { kind: 'image' });
+
+    const id = await createEvent(
+      {
+        destinationId: origin.id,
+        slug: 'the-fair',
+        status: 'draft',
+        startsAt: new Date('2026-06-01T10:00:00Z'),
+        endsAt: new Date('2026-06-01T18:00:00Z'),
+        timezone: 'UTC',
+        galleryMediaIds: [photo.id],
+      },
+      [{ locale: 'en', title: 'The fair' }],
+    );
+
+    const loaded = await getEventForAdmin(id);
+    expect(loaded.galleryMediaIds).toEqual([photo.id]);
+
+    await updateEvent(
+      id,
+      {
+        destinationId: target.id,
+        slug: 'the-fair',
+        status: 'draft',
+        startsAt: new Date('2026-06-01T10:00:00Z'),
+        endsAt: new Date('2026-06-01T18:00:00Z'),
+        timezone: 'UTC',
+        galleryMediaIds: [],
+      },
+      [{ locale: 'en', title: 'The fair' }],
+    );
+
+    const [row] = await db.select().from(schema.events).where(eq(schema.events.id, id));
+    expect(row!.destinationId).toBe(target.id);
+    expect((await getEventForAdmin(id)).galleryMediaIds).toEqual([]);
   });
 });
 

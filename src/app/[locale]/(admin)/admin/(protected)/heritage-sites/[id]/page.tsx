@@ -5,6 +5,7 @@ import { getTranslator, isAppLocale, type AppLocale } from '@/lib/i18n';
 import { getHeritageSiteForAdmin } from '@/server/domain/admin/heritage';
 import { listDestinationsForAdmin } from '@/server/domain/admin/destinations';
 import { listMedia } from '@/server/domain/admin/media';
+import { mediaUrl } from '@/server/media/urls';
 import { isDomainError } from '@/server/domain/errors';
 import { AdminPage } from '@/components/admin/AdminPage';
 import { HeritageSiteForm } from '@/components/admin/HeritageSiteForm';
@@ -46,6 +47,9 @@ export default async function HeritageSiteEditPage({
     .map((asset) => ({
       value: asset.id,
       label: asset.originalFilename ?? `${asset.kind} (${asset.id.slice(0, 8)})`,
+      thumbUrl: mediaUrl(
+        asset.variants.find((v) => v.name === 'thumb')?.storageKey ?? asset.storageKey,
+      ),
     }));
 
   if (isNew) {

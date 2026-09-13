@@ -3,6 +3,7 @@
 import { saveHeritageSiteAction } from '@/server/actions/content';
 import type { AppLocale } from '@/lib/i18n/config';
 import { AdminForm, Field, Fieldset, Select, TextInput } from './AdminForm';
+import { GalleryPicker } from './GalleryPicker';
 import { TranslationFields, type TranslationValues } from './TranslationFields';
 
 export type HeritageSiteFormValues = {
@@ -26,7 +27,7 @@ export function HeritageSiteForm({
   locale: AppLocale;
   values: HeritageSiteFormValues;
   destinationOptions: { value: string; label: string }[];
-  mediaOptions: { value: string; label: string }[];
+  mediaOptions: { value: string; label: string; thumbUrl?: string }[];
 }) {
   return (
     <AdminForm action={saveHeritageSiteAction} submitLabel={values.id ? 'Save changes' : 'Create'}>
@@ -94,24 +95,11 @@ export function HeritageSiteForm({
                 hint="Additional photos shown on the site's public page."
                 error={fieldError('galleryMediaIds')}
               >
-                {mediaOptions.length === 0 ? (
-                  <p className="text-sm text-lime-faint">Upload images to the media library first.</p>
-                ) : (
-                  <div className="grid max-h-64 gap-2 overflow-y-auto rounded-md border border-[var(--hairline)] p-3 sm:grid-cols-2">
-                    {mediaOptions.map((option) => (
-                      <label key={option.value} className="flex items-center gap-2.5 text-sm text-lime-dim">
-                        <input
-                          type="checkbox"
-                          name="galleryMediaIds"
-                          value={option.value}
-                          defaultChecked={values.galleryMediaIds.includes(option.value)}
-                          className="h-4 w-4 accent-[var(--color-verdigris)]"
-                        />
-                        <span className="truncate">{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
+                <GalleryPicker
+                  name="galleryMediaIds"
+                  options={mediaOptions}
+                  selected={values.galleryMediaIds}
+                />
               </Field>
             </Fieldset>
 

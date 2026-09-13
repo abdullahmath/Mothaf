@@ -5,6 +5,7 @@ import { getEventForAdmin } from '@/server/domain/admin/events';
 import { listDestinationsForAdmin } from '@/server/domain/admin/destinations';
 import { listToursForAdmin } from '@/server/domain/admin/tours';
 import { listMedia } from '@/server/domain/admin/media';
+import { mediaUrl } from '@/server/media/urls';
 import { isDomainError } from '@/server/domain/errors';
 import { AdminPage } from '@/components/admin/AdminPage';
 import { EventForm } from '@/components/admin/EventForm';
@@ -52,6 +53,9 @@ export default async function EventEditPage({
     .map((asset) => ({
       value: asset.id,
       label: asset.originalFilename ?? `${asset.kind} (${asset.id.slice(0, 8)})`,
+      thumbUrl: mediaUrl(
+        asset.variants.find((v) => v.name === 'thumb')?.storageKey ?? asset.storageKey,
+      ),
     }));
 
   if (isNew) {
@@ -87,6 +91,9 @@ export default async function EventEditPage({
             endsAt: null,
             timezone: 'UTC',
             coverMediaId: null,
+            latitude: null,
+            longitude: null,
+            galleryMediaIds: [],
             translations: {},
           }}
         />
@@ -126,6 +133,9 @@ export default async function EventEditPage({
           endsAt: event.endsAt.toISOString(),
           timezone: event.timezone,
           coverMediaId: event.coverMediaId,
+          latitude: event.latitude,
+          longitude: event.longitude,
+          galleryMediaIds: event.galleryMediaIds,
           translations: toTranslationValues(event.translations),
         }}
       />

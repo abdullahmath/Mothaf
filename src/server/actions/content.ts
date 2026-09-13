@@ -485,6 +485,9 @@ export async function savePoiAction(
     latitude: nullableField(formData, 'latitude'),
     longitude: nullableField(formData, 'longitude'),
     tags: field(formData, 'tags'),
+    galleryMediaIds: formData
+      .getAll('galleryMediaIds')
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
   });
   if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
 
@@ -618,6 +621,9 @@ export async function saveEventAction(
     coverMediaId: nullableField(formData, 'coverMediaId'),
     latitude: nullableField(formData, 'latitude'),
     longitude: nullableField(formData, 'longitude'),
+    galleryMediaIds: formData
+      .getAll('galleryMediaIds')
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
   });
   if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));
 

@@ -3,6 +3,7 @@
 import { saveEventAction } from '@/server/actions/content';
 import type { AppLocale } from '@/lib/i18n/config';
 import { AdminForm, Field, Fieldset, Select, TextInput } from './AdminForm';
+import { GalleryPicker, type GalleryMediaOption } from './GalleryPicker';
 import { TranslationFields, type TranslationValues } from './TranslationFields';
 
 /** `YYYY-MM-DDTHH:mm`, what `<input type="datetime-local">` needs and returns. */
@@ -24,6 +25,9 @@ export type EventFormValues = {
   endsAt: string | null;
   timezone: string;
   coverMediaId: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  galleryMediaIds: string[];
   translations: TranslationValues;
 };
 
@@ -38,7 +42,7 @@ export function EventForm({
   values: EventFormValues;
   destinationOptions: { value: string; label: string }[];
   tourOptions: { value: string; label: string }[];
-  mediaOptions: { value: string; label: string }[];
+  mediaOptions: GalleryMediaOption[];
 }) {
   return (
     <AdminForm action={saveEventAction} submitLabel={values.id ? 'Save changes' : 'Create'}>
@@ -141,6 +145,35 @@ export function EventForm({
                   options={[{ value: '', label: '— none —' }, ...mediaOptions]}
                 />
               </Field>
+
+              <Field
+                label="Gallery"
+                name="galleryMediaIds"
+                hint="Additional photos shown on the event's public page."
+                error={fieldError('galleryMediaIds')}
+              >
+                <GalleryPicker
+                  name="galleryMediaIds"
+                  options={mediaOptions}
+                  selected={values.galleryMediaIds}
+                />
+              </Field>
+            </Fieldset>
+
+            <Fieldset legend="Location" description="Optional.">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Latitude" name="latitude" error={fieldError('latitude')}>
+                  <TextInput name="latitude" defaultValue={values.latitude} latin inputMode="decimal" />
+                </Field>
+                <Field label="Longitude" name="longitude" error={fieldError('longitude')}>
+                  <TextInput
+                    name="longitude"
+                    defaultValue={values.longitude}
+                    latin
+                    inputMode="decimal"
+                  />
+                </Field>
+              </div>
             </Fieldset>
           </>
         );

@@ -320,8 +320,8 @@ export function TourViewer({ manifest }: { manifest: TourManifest }) {
         </button>
 
         <div className="min-w-0 flex-1 text-center">
-          <p className="eyebrow">{manifest.destination.name}</p>
-          <h1 className="display truncate text-lg text-lime sm:text-xl">{scene.title}</h1>
+          <p className="eyebrow truncate">{manifest.destination.name}</p>
+          <h1 className="display mt-0.5 truncate text-lg text-lime sm:text-xl">{scene.title}</h1>
         </div>
 
         <div className="flex items-center gap-2">

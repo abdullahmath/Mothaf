@@ -1,11 +1,13 @@
 import 'server-only';
 
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../../db';
 import {
+  mediaAssets,
   poiCategories,
   poiCategoryTranslations,
+  poiMedia,
   poiTranslations,
   pointsOfInterest,
 } from '../../db/schema';
@@ -54,9 +56,47 @@ export const poiInputSchema = z.object({
           ].slice(0, 20)
         : [],
     ),
+  /** Ids from the media library, in display order. */
+  galleryMediaIds: z.array(z.string().uuid()).max(50).default([]),
 });
 
 export type PoiInput = z.infer<typeof poiInputSchema>;
+
+/**
+ * Replaces a POI's gallery.
+ *
+ * Media is a shared library, not destination-scoped, so existence is the
+ * only requirement — but it *is* required: a client-supplied id list must
+ * not be trusted to already exist, or a stale or forged id would sit in the
+ * gallery as a silent broken image.
+ */
+async function replaceGallery(poiId: string, mediaIds: string[]): Promise<void> {
+  const db = await getDb();
+  const uniqueIds = [...new Set(mediaIds)];
+
+  if (uniqueIds.length > 0) {
+    const found = await db.select({ id: mediaAssets.id }).from(mediaAssets).where(inArray(mediaAssets.id, uniqueIds));
+    if (found.length !== uniqueIds.length) {
+      throw validation('One of the selected gallery images no longer exists.', {
+        galleryMediaIds: 'Choose files from the media library',
+      });
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(poiMedia).where(eq(poiMedia.poiId, poiId));
+    if (uniqueIds.length > 0) {
+      await tx.insert(poiMedia).values(
+        uniqueIds.map((mediaId, index) => ({
+          poiId,
+          mediaId,
+          role: 'gallery' as const,
+          position: index,
+        })),
+      );
+    }
+  });
+}
 
 /**
  * Confirms a category actually belongs to the POI's own destination.
@@ -111,12 +151,16 @@ export async function getPoiForAdmin(id: string) {
     .limit(1);
   if (!poi) throw notFound('Point of interest not found');
 
-  const translations = await db
-    .select()
-    .from(poiTranslations)
-    .where(eq(poiTranslations.poiId, id));
+  const [translations, galleryRows] = await Promise.all([
+    db.select().from(poiTranslations).where(eq(poiTranslations.poiId, id)),
+    db
+      .select({ mediaId: poiMedia.mediaId })
+      .from(poiMedia)
+      .where(eq(poiMedia.poiId, id))
+      .orderBy(asc(poiMedia.position)),
+  ]);
 
-  return { ...poi, translations };
+  return { ...poi, translations, galleryMediaIds: galleryRows.map((r) => r.mediaId) };
 }
 
 export async function createPoi(
@@ -149,12 +193,15 @@ export async function createPoi(
     })
     .returning({ id: pointsOfInterest.id });
 
-  await replaceTranslations({
-    table: poiTranslations,
-    parentColumn: poiTranslations.poiId,
-    parentId: row!.id,
-    rows: translations,
-  });
+  await Promise.all([
+    replaceTranslations({
+      table: poiTranslations,
+      parentColumn: poiTranslations.poiId,
+      parentId: row!.id,
+      rows: translations,
+    }),
+    replaceGallery(row!.id, input.galleryMediaIds),
+  ]);
 
   await recordAudit({
     actorId: auth.user.id,
@@ -188,6 +235,7 @@ export async function updatePoi(
   await db
     .update(pointsOfInterest)
     .set({
+      destinationId: input.destinationId,
       categoryId: input.categoryId ?? null,
       slug: input.slug,
       status: input.status,
@@ -199,12 +247,15 @@ export async function updatePoi(
     })
     .where(eq(pointsOfInterest.id, id));
 
-  await replaceTranslations({
-    table: poiTranslations,
-    parentColumn: poiTranslations.poiId,
-    parentId: id,
-    rows: translations,
-  });
+  await Promise.all([
+    replaceTranslations({
+      table: poiTranslations,
+      parentColumn: poiTranslations.poiId,
+      parentId: id,
+      rows: translations,
+    }),
+    replaceGallery(id, input.galleryMediaIds),
+  ]);
 
   await recordAudit({
     actorId: auth.user.id,

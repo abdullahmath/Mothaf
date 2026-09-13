@@ -3,6 +3,7 @@
 import { savePoiAction } from '@/server/actions/content';
 import type { AppLocale } from '@/lib/i18n/config';
 import { AdminForm, Field, Fieldset, Select, TextInput } from './AdminForm';
+import { GalleryPicker, type GalleryMediaOption } from './GalleryPicker';
 import { PoiCategoryQuickAdd } from './PoiCategoryQuickAdd';
 import { TranslationFields, type TranslationValues } from './TranslationFields';
 
@@ -16,6 +17,7 @@ export type PoiFormValues = {
   latitude: number | null;
   longitude: number | null;
   tags: string;
+  galleryMediaIds: string[];
   translations: TranslationValues;
 };
 
@@ -30,7 +32,7 @@ export function PoiForm({
   values: PoiFormValues;
   destinationOptions: { value: string; label: string }[];
   categoryOptions: { value: string; label: string }[];
-  mediaOptions: { value: string; label: string }[];
+  mediaOptions: GalleryMediaOption[];
 }) {
   return (
     <AdminForm action={savePoiAction} submitLabel={values.id ? 'Save changes' : 'Create'}>
@@ -112,6 +114,19 @@ export function PoiForm({
                 hint="Comma-separated, locale-independent keys (e.g. seating, stage)."
               >
                 <TextInput name="tags" defaultValue={values.tags} latin />
+              </Field>
+
+              <Field
+                label="Gallery"
+                name="galleryMediaIds"
+                hint="Additional photos shown alongside this point of interest."
+                error={fieldError('galleryMediaIds')}
+              >
+                <GalleryPicker
+                  name="galleryMediaIds"
+                  options={mediaOptions}
+                  selected={values.galleryMediaIds}
+                />
               </Field>
             </Fieldset>
 
