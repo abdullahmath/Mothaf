@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { getTranslator, isAppLocale, type AppLocale } from '@/lib/i18n';
 import { listDestinations } from '@/server/domain/public/destinations';
 import { listUpcomingEvents } from '@/server/domain/public/events';
@@ -7,11 +8,24 @@ import { getHeroScene } from '@/server/domain/public/hero';
 import { HeroPanorama } from '@/components/home/HeroPanorama';
 import { DestinationCard } from '@/components/content/DestinationCard';
 import { EventCard } from '@/components/content/EventCard';
+import { localeAlternates } from '@/lib/seo/alternates';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { env } from '@/server/config/env';
 
 // Rendered on request, with the underlying queries served from the data
 // cache (see server/domain/public/cache.ts). Prerendering these at build
 // time would make `next build` require the production database.
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isAppLocale(locale)) return {};
+  return { alternates: localeAlternates(locale, '') };
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
@@ -25,8 +39,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     getHeroScene(locale),
   ]);
 
+  const origin = env().APP_ORIGIN;
+
   return (
     <>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: t('common.appName'),
+          description: t('home.heroBody'),
+          url: `${origin}/${locale}`,
+        }}
+      />
+
       {/* ---- Hero ------------------------------------------------------- */}
       <section className="relative h-[78dvh] min-h-[520px] w-full overflow-hidden border-b border-[var(--hairline)]">
         {hero ? (

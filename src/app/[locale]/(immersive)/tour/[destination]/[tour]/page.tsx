@@ -4,6 +4,7 @@ import { isAppLocale, type AppLocale } from '@/lib/i18n';
 import { buildTourManifest } from '@/server/domain/tours/manifest';
 import { isDomainError } from '@/server/domain/errors';
 import { TourViewer } from '@/components/tour/TourViewer';
+import { localeAlternates } from '@/lib/seo/alternates';
 
 type Params = Promise<{ locale: string; destination: string; tour: string }>;
 
@@ -29,10 +30,14 @@ async function load(params: Params) {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { locale } = await params;
   const manifest = await load(params);
   return {
     title: `${manifest.tour.title} — ${manifest.destination.name}`,
     description: manifest.tour.summary ?? undefined,
+    alternates: isAppLocale(locale)
+      ? localeAlternates(locale, `/tour/${manifest.destination.slug}/${manifest.tour.slug}`)
+      : undefined,
     openGraph: {
       title: manifest.tour.title,
       description: manifest.tour.summary ?? undefined,

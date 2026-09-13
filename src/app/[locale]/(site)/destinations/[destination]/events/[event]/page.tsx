@@ -12,6 +12,9 @@ import { getEventDetail } from '@/server/domain/public/events';
 import { isDomainError } from '@/server/domain/errors';
 import { EventGallery } from '@/components/tour/EventGallery';
 import { buildSrcSet } from '@/lib/media/srcset';
+import { localeAlternates } from '@/lib/seo/alternates';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { env } from '@/server/config/env';
 
 // Rendered on request, with the underlying queries served from the data
 // cache (see server/domain/public/cache.ts). Prerendering these at build
@@ -35,8 +38,17 @@ async function load(params: Params) {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { event } = await load(params);
-  return { title: event.title, description: event.summary ?? undefined };
+  const { locale, event } = await load(params);
+  return {
+    title: event.title,
+    description: event.summary ?? undefined,
+    alternates: localeAlternates(locale, `/destinations/${event.destinationSlug}/events/${event.slug}`),
+    openGraph: {
+      title: event.title,
+      description: event.summary ?? undefined,
+      images: event.cover ? [{ url: event.cover.src }] : undefined,
+    },
+  };
 }
 
 export default async function EventPage({ params }: { params: Params }) {
@@ -50,8 +62,57 @@ export default async function EventPage({ params }: { params: Params }) {
         ? t('events.upcoming')
         : t('events.past');
 
+  const origin = env().APP_ORIGIN;
+  const hasLocation = event.venue || (event.latitude !== null && event.longitude !== null);
+  const destinationUrl = `${origin}/${locale}/destinations/${event.destinationSlug}`;
+  const eventUrl = `${destinationUrl}/events/${event.slug}`;
+
   return (
     <article className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: event.destinationName, item: destinationUrl },
+            { '@type': 'ListItem', position: 2, name: event.title, item: eventUrl },
+          ],
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Event',
+          name: event.title,
+          description: event.summary ?? event.description ?? undefined,
+          startDate: event.startsAt,
+          endDate: event.endsAt,
+          image: event.cover ? event.cover.src : undefined,
+          eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+          url: eventUrl,
+          ...(hasLocation
+            ? {
+                location: {
+                  '@type': 'Place',
+                  name: event.venue ?? event.destinationName,
+                  ...(event.latitude !== null && event.longitude !== null
+                    ? {
+                        geo: {
+                          '@type': 'GeoCoordinates',
+                          latitude: event.latitude,
+                          longitude: event.longitude,
+                        },
+                      }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(event.organizer
+            ? { organizer: { '@type': 'Organization', name: event.organizer } }
+            : {}),
+        }}
+      />
+
       <p className="eyebrow mb-3">
         <Link
           href={`/${locale}/destinations/${event.destinationSlug}`}

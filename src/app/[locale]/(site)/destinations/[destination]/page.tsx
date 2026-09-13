@@ -7,6 +7,9 @@ import { isDomainError } from '@/server/domain/errors';
 import { EventCard } from '@/components/content/EventCard';
 import { Model3DEmbed } from '@/components/content/Model3DEmbed';
 import { buildSrcSet } from '@/lib/media/srcset';
+import { localeAlternates } from '@/lib/seo/alternates';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { env } from '@/server/config/env';
 
 // Rendered on request, with the underlying queries served from the data
 // cache (see server/domain/public/cache.ts). Prerendering these at build
@@ -29,10 +32,11 @@ async function load(params: Params) {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { page } = await load(params);
+  const { locale, page } = await load(params);
   return {
     title: page.name,
     description: page.summary ?? page.tagline ?? undefined,
+    alternates: localeAlternates(locale, `/destinations/${page.slug}`),
     openGraph: {
       title: page.name,
       description: page.summary ?? undefined,
@@ -45,8 +49,32 @@ export default async function DestinationPage({ params }: { params: Params }) {
   const { locale, page } = await load(params);
   const t = getTranslator(locale);
 
+  const origin = env().APP_ORIGIN;
+  const pageUrl = `${origin}/${locale}/destinations/${page.slug}`;
+
   return (
     <article>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'TouristAttraction',
+          name: page.name,
+          description: page.summary ?? page.tagline ?? undefined,
+          url: pageUrl,
+          image: page.cover ? page.cover.src : undefined,
+          ...(page.latitude !== null && page.longitude !== null
+            ? {
+                geo: {
+                  '@type': 'GeoCoordinates',
+                  latitude: page.latitude,
+                  longitude: page.longitude,
+                },
+              }
+            : {}),
+          ...(page.countryCode ? { address: { '@type': 'PostalAddress', addressCountry: page.countryCode } } : {}),
+        }}
+      />
+
       {/* ---- Masthead ---------------------------------------------------- */}
       <header className="relative h-[52dvh] min-h-[380px] overflow-hidden border-b border-[var(--hairline)]">
         {page.cover ? (

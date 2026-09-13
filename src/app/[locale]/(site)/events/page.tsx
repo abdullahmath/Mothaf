@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTranslator, isAppLocale, type AppLocale } from '@/lib/i18n';
 import { listPastEvents, listUpcomingEvents } from '@/server/domain/public/events';
 import { EventCard } from '@/components/content/EventCard';
+import { localeAlternates } from '@/lib/seo/alternates';
 
 // Rendered on request, with the underlying queries served from the data
 // cache (see server/domain/public/cache.ts). Prerendering these at build
@@ -16,7 +17,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   if (!isAppLocale(locale)) return {};
-  return { title: getTranslator(locale)('events.title') };
+  return {
+    title: getTranslator(locale)('events.title'),
+    alternates: localeAlternates(locale, '/events'),
+  };
 }
 
 export default async function EventsPage({ params }: { params: Promise<{ locale: string }> }) {

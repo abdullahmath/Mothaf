@@ -6,6 +6,9 @@ import { getHeritageSiteDetail } from '@/server/domain/public/heritage';
 import { isDomainError } from '@/server/domain/errors';
 import { HeritageSiteGallery } from '@/components/content/HeritageSiteGallery';
 import { buildSrcSet } from '@/lib/media/srcset';
+import { localeAlternates } from '@/lib/seo/alternates';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { env } from '@/server/config/env';
 
 // Rendered on request, with the underlying query served from the data cache
 // (see server/domain/public/cache.ts) — the same reasoning as every other
@@ -30,11 +33,15 @@ async function load(params: Params) {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { site } = await load(params);
+  const { locale, site } = await load(params);
   const description = site.shortDescription ?? site.description?.slice(0, 200) ?? undefined;
   return {
     title: `${site.title} — ${site.destinationName}`,
     description,
+    alternates: localeAlternates(
+      locale,
+      `/destinations/${site.destinationSlug}/heritage/${site.slug}`,
+    ),
     openGraph: {
       title: site.title,
       description,
@@ -47,8 +54,43 @@ export default async function HeritageSitePage({ params }: { params: Params }) {
   const { locale, site } = await load(params);
   const t = getTranslator(locale);
 
+  const origin = env().APP_ORIGIN;
+  const destinationUrl = `${origin}/${locale}/destinations/${site.destinationSlug}`;
+  const pageUrl = `${destinationUrl}/heritage/${site.slug}`;
+
   return (
     <article className="mx-auto max-w-[1100px] px-5 py-16 sm:px-8">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'TouristAttraction',
+          name: site.title,
+          description: site.shortDescription ?? site.description ?? undefined,
+          url: pageUrl,
+          image: site.cover ? site.cover.src : undefined,
+          isPartOf: { '@type': 'TouristAttraction', name: site.destinationName, url: destinationUrl },
+          ...(site.latitude !== null && site.longitude !== null
+            ? {
+                geo: {
+                  '@type': 'GeoCoordinates',
+                  latitude: site.latitude,
+                  longitude: site.longitude,
+                },
+              }
+            : {}),
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: site.destinationName, item: destinationUrl },
+            { '@type': 'ListItem', position: 2, name: site.title, item: pageUrl },
+          ],
+        }}
+      />
+
       <p className="eyebrow mb-3">
         <Link
           href={`/${locale}/destinations/${site.destinationSlug}`}
