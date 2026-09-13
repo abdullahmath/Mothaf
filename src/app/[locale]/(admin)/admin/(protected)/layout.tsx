@@ -47,6 +47,7 @@ export default async function ProtectedAdminLayout({
         media: t('admin.media'),
         events: t('admin.events'),
         analytics: t('admin.analytics'),
+        account: t('admin.account'),
         signOut: t('auth.signOut'),
         viewSite: t('admin.preview'),
       }}

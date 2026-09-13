@@ -28,6 +28,7 @@ export type AdminShellLabels = {
   media: string;
   events: string;
   analytics: string;
+  account: string;
   signOut: string;
   viewSite: string;
 };
@@ -122,12 +123,23 @@ export function AdminShell({
                 {labels.viewSite} ↗
               </Link>
               <div className="px-2.5 pt-1">
-                <p className="truncate text-sm text-lime">{user.displayName}</p>
+                <Link
+                  href={`/${locale}/admin/account`}
+                  className="block truncate text-sm text-lime transition-colors hover:text-verdigris-bright"
+                >
+                  {user.displayName}
+                </Link>
                 <p className="readout truncate" dir="ltr">
                   {user.email}
                 </p>
                 <p className="mt-1 text-2xs text-lime-faint">{user.role.replace('_', ' ')}</p>
               </div>
+              <Link
+                href={`/${locale}/admin/account`}
+                className="rounded-md px-2.5 py-2 text-sm text-lime-faint transition-colors hover:text-lime"
+              >
+                {labels.account}
+              </Link>
               <LogoutButton locale={locale} label={labels.signOut} />
             </div>
           </div>

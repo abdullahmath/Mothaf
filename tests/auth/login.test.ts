@@ -2,7 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
 import { createTestDb, schema, type TestDb } from '../helpers/db';
 import { hashPassword } from '@/server/auth/password';
-import { login, normalizeEmail } from '@/server/domain/auth/login';
+import { changePassword, login, normalizeEmail } from '@/server/domain/auth/login';
+import { verifyPassword } from '@/server/auth/password';
 import { isDomainError } from '@/server/domain/errors';
 import {
   createSession,
@@ -301,5 +302,86 @@ describe('sessions', () => {
       .from(schema.sessions)
       .where(eq(schema.sessions.id, sessionId));
     expect(updated!.lastSeenAt.getTime()).toBeGreaterThan(before!.lastSeenAt.getTime() - 60_000);
+  });
+});
+
+describe('changePassword', () => {
+  it('refuses a wrong current password and leaves the hash untouched', async () => {
+    const [before] = await db.select().from(schema.users).where(eq(schema.users.id, userId));
+
+    const error = await changePassword(userId, 'not-the-real-password', await hashPassword('a-new-good-password'))
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('validation');
+
+    const [after] = await db.select().from(schema.users).where(eq(schema.users.id, userId));
+    expect(after!.passwordHash).toBe(before!.passwordHash);
+  });
+
+  it('updates the hash and signs out every session, including the one making the change', async () => {
+    const { token: sessionA } = await createSession(userId, context);
+    const { token: sessionB } = await createSession(userId, context);
+
+    const newHash = await hashPassword('a-new-good-password');
+    await changePassword(userId, PASSWORD, newHash);
+
+    const [row] = await db.select().from(schema.users).where(eq(schema.users.id, userId));
+    expect(await verifyPassword('a-new-good-password', row!.passwordHash)).toBe(true);
+    expect(await verifyPassword(PASSWORD, row!.passwordHash)).toBe(false);
+
+    expect(await resolveSession(sessionA)).toBeNull();
+    expect(await resolveSession(sessionB)).toBeNull();
+  });
+
+  it('rate-limits repeated attempts, so a stolen session cannot grind the current password', async () => {
+    // RATE_LIMITS.passwordReset allows 3 before refusing outright.
+    for (let i = 0; i < 3; i++) {
+      const error = await changePassword(userId, 'wrong-guess', await hashPassword('irrelevant-new-pass'))
+        .then(() => null)
+        .catch((e) => e);
+      expect(isDomainError(error)).toBe(true);
+      expect(error.code).toBe('validation');
+    }
+
+    const limited = await changePassword(userId, 'wrong-guess', await hashPassword('irrelevant-new-pass'))
+      .then(() => null)
+      .catch((e) => e);
+    expect(isDomainError(limited)).toBe(true);
+    expect(limited.code).toBe('rate_limited');
+
+    // The real password still works — the limit refused the request, not
+    // silently accepted it.
+    const [row] = await db.select().from(schema.users).where(eq(schema.users.id, userId));
+    expect(await verifyPassword(PASSWORD, row!.passwordHash)).toBe(true);
+  });
+
+  it('records an audit entry for both a failed and a successful change', async () => {
+    await changePassword(userId, 'wrong-guess', await hashPassword('irrelevant-new-pass'))
+      .then(() => null)
+      .catch(() => null);
+    await changePassword(userId, PASSWORD, await hashPassword('a-new-good-password'));
+
+    const entries = await db
+      .select()
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.actorId, userId));
+    const actions = entries.map((e) => e.action);
+    expect(actions).toContain('auth.password_change.failed');
+    expect(actions).toContain('auth.password_change.succeeded');
+  });
+
+  it('refuses an unknown user id', async () => {
+    const error = await changePassword(
+      '00000000-0000-0000-0000-000000000000',
+      PASSWORD,
+      await hashPassword('a-new-good-password'),
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
+    expect(error.code).toBe('not_found');
   });
 });

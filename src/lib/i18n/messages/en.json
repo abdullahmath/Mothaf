@@ -126,11 +126,13 @@
     "invalidCredentials": "Email address or password is incorrect.",
     "accountLocked": "Too many attempts. Try again later.",
     "rateLimited": "Too many attempts. Please wait before trying again.",
-    "sessionExpired": "Your session has expired. Please sign in again."
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "passwordChanged": "Your password has been changed. Please sign in again."
   },
   "admin": {
     "title": "Administration",
     "dashboard": "Dashboard",
+    "account": "My account",
     "destinations": "Destinations",
     "tours": "Tours",
     "scenes": "Scenes",

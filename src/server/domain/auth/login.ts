@@ -126,6 +126,12 @@ async function audit(
  *
  * If the old password was captured, the attacker's session must die at the
  * moment the owner changes it — otherwise the change is theatre.
+ *
+ * Rate-limited per account: this is reachable by anyone holding a valid
+ * session, so without a limit a stolen session cookie would let an attacker
+ * grind the current password with no lockout, sidestepping the login form's
+ * own throttling entirely. Reuses `passwordReset`'s rule — the risk shape is
+ * the same, a bounded number of guesses at a password.
  */
 export async function changePassword(
   userId: string,
@@ -133,10 +139,22 @@ export async function changePassword(
   newPasswordHash: string,
 ): Promise<void> {
   const db = await getDb();
+
+  const limit = await consumeRateLimit(
+    accountKey('change-password', userId),
+    RATE_LIMITS.passwordReset,
+  );
+  if (!limit.allowed) throw rateLimited(limit.retryAfterSeconds);
+
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!user) throw new DomainError('not_found', 'User not found');
 
   if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+    await db.insert(auditLog).values({
+      actorId: userId,
+      action: 'auth.password_change.failed',
+      metadata: {},
+    });
     throw validation('Current password is incorrect', { currentPassword: 'Incorrect password' });
   }
 
@@ -144,6 +162,12 @@ export async function changePassword(
     .update(users)
     .set({ passwordHash: newPasswordHash, updatedAt: sql`now()` })
     .where(eq(users.id, userId));
+
+  await db.insert(auditLog).values({
+    actorId: userId,
+    action: 'auth.password_change.succeeded',
+    metadata: {},
+  });
 
   await revokeAllSessionsForUser(userId);
 }

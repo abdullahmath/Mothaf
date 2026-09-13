@@ -4,6 +4,7 @@ import { getTranslator, isAppLocale, type AppLocale } from '@/lib/i18n';
 import { getAuthContext } from '@/server/auth/cookies';
 import { LoginForm } from '@/components/admin/LoginForm';
 import { Wordmark } from '@/components/chrome/Wordmark';
+import { LocaleSwitcher } from '@/components/chrome/LocaleSwitcher';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export default async function LoginPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; passwordChanged?: string }>;
 }) {
   const { locale: raw } = await params;
   if (!isAppLocale(raw)) notFound();
@@ -31,14 +32,17 @@ export default async function LoginPage({
   const auth = await getAuthContext();
   if (auth) redirect(`/${locale}/admin`);
 
-  const { next } = await searchParams;
+  const { next, passwordChanged } = await searchParams;
 
   return (
     <div className="grid min-h-dvh place-items-center px-5 py-16">
       <div className="w-full max-w-sm">
-        <div className="mb-10 flex items-center gap-3 text-lime">
-          <Wordmark size={28} />
-          <span className="display text-xl">{t('common.appName')}</span>
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 text-lime">
+            <Wordmark size={28} />
+            <span className="display text-xl">{t('common.appName')}</span>
+          </div>
+          <LocaleSwitcher locale={locale} label={t('a11y.languageSwitcher')} />
         </div>
 
         <h1 className="display text-2xl text-lime">{t('auth.signInTitle')}</h1>
@@ -47,6 +51,7 @@ export default async function LoginPage({
         <LoginForm
           locale={locale}
           next={next}
+          notice={passwordChanged === '1' ? t('auth.passwordChanged') : undefined}
           labels={{
             email: t('auth.email'),
             password: t('auth.password'),

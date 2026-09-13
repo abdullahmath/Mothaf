@@ -18,10 +18,13 @@ import type { AppLocale } from '@/lib/i18n/config';
 export function LoginForm({
   locale,
   next,
+  notice,
   labels,
 }: {
   locale: AppLocale;
   next?: string;
+  /** A one-off success message, e.g. after a password change. */
+  notice?: string;
   labels: { email: string; password: string; submit: string; submitting: string };
 }) {
   const [state, formAction] = useActionState<ActionResult | null, FormData>(loginAction, null);
@@ -30,6 +33,12 @@ export function LoginForm({
     <form action={formAction} className="mt-8 grid gap-5" noValidate>
       <input type="hidden" name="locale" value={locale} />
       {next && <input type="hidden" name="next" value={next} />}
+
+      {notice && !state && (
+        <p role="status" className="rounded-md border border-verdigris px-3 py-2 text-sm text-verdigris">
+          {notice}
+        </p>
+      )}
 
       {state && !state.ok && (
         // `alert` announces the failure to a screen reader without the user
