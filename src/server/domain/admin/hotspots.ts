@@ -234,7 +234,11 @@ export async function updateHotspot(
   if (!existing) throw notFound('Hotspot not found');
 
   assertPlacement(existing.sceneKind, input);
-  const payload = await validateAction(input.sceneId, input.actionType, input.payload);
+  // Scope the IDOR check to the hotspot's actual scene, not whatever
+  // `sceneId` the form happened to submit — a hotspot never moves between
+  // scenes on update, and trusting the client-supplied value here would let
+  // a forged field validate a payload against the wrong destination.
+  const payload = await validateAction(existing.hotspot.sceneId, input.actionType, input.payload);
 
   await db
     .update(hotspots)

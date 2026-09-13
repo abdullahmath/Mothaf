@@ -22,7 +22,7 @@ import {
 } from '@/server/domain/admin/destinations';
 import { createTour, setTourStatus } from '@/server/domain/admin/tours';
 import { createScene, reorderScenes, setSceneLinks } from '@/server/domain/admin/scenes';
-import { createHotspot } from '@/server/domain/admin/hotspots';
+import { createHotspot, updateHotspot } from '@/server/domain/admin/hotspots';
 import { createCategory, createPoi } from '@/server/domain/admin/pois';
 import { addScheduleItem, createEvent } from '@/server/domain/admin/events';
 import { getAnalyticsSummary } from '@/server/domain/admin/analytics';
@@ -574,6 +574,56 @@ describe('hotspot reference scoping', () => {
         [{ locale: 'en', label: 'Onward' }],
       ),
     ).resolves.toBeTruthy();
+  });
+
+  it('scopes an update to the hotspot\'s real scene, not a forged sceneId field', async () => {
+    const user = await makeUser(db, 'administrator');
+    actAs({ id: user.id, role: 'administrator' });
+
+    const media = await makeMedia(db);
+    const home = await makeDestination(db, { slug: 'home-update' });
+    const elsewhere = await makeDestination(db, { slug: 'elsewhere-update' });
+    const homeTour = await makeTour(db, home.id);
+    const homeScene = await makeScene(db, homeTour.id, { backgroundMediaId: media.id });
+    const elsewhereTour = await makeTour(db, elsewhere.id);
+    const elsewhereScene = await makeScene(db, elsewhereTour.id, { backgroundMediaId: media.id });
+    const elsewherePoi = await makePoi(db, elsewhere.id);
+
+    const hotspot = await createHotspot(
+      {
+        sceneId: homeScene.id,
+        actionType: 'info',
+        payload: {},
+        yawDeg: 0,
+        pitchDeg: 0,
+        icon: 'info',
+        style: 'pulse',
+        status: 'published',
+      },
+      [{ locale: 'en', label: 'Note' }],
+    );
+
+    // The hotspot actually lives on `homeScene`. A client that forges the
+    // `sceneId` field to `elsewhereScene` should not be able to smuggle a
+    // reference to that destination's POI past the scoping check.
+    const error = await updateHotspot(
+      hotspot,
+      {
+        sceneId: elsewhereScene.id,
+        actionType: 'poi',
+        payload: { poiId: elsewherePoi.id },
+        yawDeg: 0,
+        pitchDeg: 0,
+        icon: 'marker',
+        style: 'pin',
+        status: 'published',
+      },
+      [{ locale: 'en', label: 'About' }],
+    )
+      .then(() => null)
+      .catch((e) => e);
+
+    expect(isDomainError(error)).toBe(true);
   });
 });
 

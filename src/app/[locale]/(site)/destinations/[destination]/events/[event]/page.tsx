@@ -10,7 +10,7 @@ import {
 } from '@/lib/i18n';
 import { getEventDetail } from '@/server/domain/public/events';
 import { isDomainError } from '@/server/domain/errors';
-import { MediaFigure } from '@/components/tour/MediaFigure';
+import { EventGallery } from '@/components/tour/EventGallery';
 import { buildSrcSet } from '@/lib/media/srcset';
 
 // Rendered on request, with the underlying queries served from the data
@@ -136,11 +136,7 @@ export default async function EventPage({ params }: { params: Params }) {
           {event.gallery.length > 0 && (
             <section>
               <h2 className="eyebrow mb-5">{t('media.gallery')}</h2>
-              <div className="grid gap-6 sm:grid-cols-2">
-                {event.gallery.map((media) => (
-                  <MediaFigure key={media.id} media={media} t={t} />
-                ))}
-              </div>
+              <EventGallery locale={locale} items={event.gallery} />
             </section>
           )}
         </div>
