@@ -3,40 +3,14 @@ import type { NextConfig } from 'next';
 /**
  * Security headers applied to every response.
  *
- * The CSP is intentionally strict: no inline scripts, no eval, no framing.
- * `'unsafe-inline'` is permitted for styles only because Next.js injects
- * critical CSS inline during streaming; script-src has no such exemption.
+ * The Content-Security-Policy is set in middleware.ts, not here: it needs a
+ * fresh nonce per request so script-src can stay free of 'unsafe-inline'
+ * while still allowing the inline hydration scripts Next.js itself streams
+ * into the page.
  */
 const isProd = process.env.NODE_ENV === 'production';
 
-const csp = [
-  "default-src 'self'",
-  // Next.js dev needs eval for React Refresh; production does not.
-  isProd ? "script-src 'self'" : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  // blob: is required by the panorama engine for progressive texture decode.
-  "img-src 'self' data: blob:",
-  "media-src 'self' blob:",
-  "font-src 'self' data:",
-  "connect-src 'self'",
-  "worker-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  // A destination may optionally embed its own Sketchfab 3D scan
-  // (destinations.sketchfab_model_id). The iframe src is always built by us
-  // from a validated 32-hex-char id, never from stored HTML, so this origin
-  // is the only thing the field can ever cause to be framed.
-  "frame-src 'self' https://sketchfab.com",
-  "manifest-src 'self'",
-  isProd ? 'upgrade-insecure-requests' : '',
-]
-  .filter(Boolean)
-  .join('; ');
-
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
