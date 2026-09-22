@@ -116,6 +116,11 @@ async function main() {
   await seedLocales();
   const adminId = await seedAdmin();
 
+  if (process.env.SEED_DEMO_CONTENT === 'false') {
+    console.log('· SEED_DEMO_CONTENT=false — skipping the demo destination and panoramas');
+    return;
+  }
+
   const db = await getDb();
 
   // Idempotence: remove the previous seed of this destination. Cascades clear
