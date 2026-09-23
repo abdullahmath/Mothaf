@@ -30,8 +30,15 @@ export type PanoramaRecipe = {
   label: string;
 };
 
-const WIDTH = 4096;
-const HEIGHT = 2048;
+/**
+ * Full-size by default; overridable down to spare memory on a constrained
+ * deploy target. Sharp holds the whole raster in memory while it rasterizes
+ * and re-encodes the SVG, and that cost is quadratic in width — 4096×2048 is
+ * fine on a dev machine but can OOM a 512MB instance rendering several scenes
+ * back to back.
+ */
+const WIDTH = Number(process.env.SEED_PANORAMA_WIDTH) || 4096;
+const HEIGHT = WIDTH / 2;
 
 /**
  * Builds the SVG source.
