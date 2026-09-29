@@ -71,9 +71,12 @@ export default async function AnalyticsAdminPage({
         <p className="text-sm text-lime-dim">{t('analytics.noData')}</p>
       ) : (
         <>
-          <ul className="grid gap-px overflow-hidden rounded-md border border-[var(--hairline)] bg-[var(--hairline)] sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid overflow-hidden rounded-md border border-[var(--hairline)] sm:grid-cols-2 lg:grid-cols-3">
             {tiles.map((tile) => (
-              <li key={tile.label} className="bg-ink p-5">
+              <li
+                key={tile.label}
+                className="border-b border-e border-[var(--hairline)] bg-ink p-5 last:border-e-0"
+              >
                 <p className="eyebrow">{tile.label}</p>
                 <p className="mono mt-2 text-3xl text-lime">{formatNumber(locale, tile.value)}</p>
               </li>
