@@ -19,6 +19,12 @@ export async function JsonLd({ data }: { data: object }) {
     <script
       type="application/ld+json"
       nonce={nonce}
+      // Browsers deliberately hide a script's nonce value from later reads
+      // (getAttribute, cloneNode) once it has been applied — a defence against
+      // an XSS payload harvesting nonces off the page. React's hydration check
+      // then sees "" where the server sent the real value and flags a
+      // mismatch that isn't one; suppressing it here is the documented fix.
+      suppressHydrationWarning
       dangerouslySetInnerHTML={{ __html: json }}
     />
   );
