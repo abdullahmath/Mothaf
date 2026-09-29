@@ -125,7 +125,7 @@ export function DestinationForm({
 
             <Fieldset
               legend="Location"
-              description="Optional. Used for map placement and structured data."
+              description="Optional. Used for map placement and structured data. Shows a Google Maps button on the public page."
             >
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="Country code" name="countryCode" error={fieldError('countryCode')}>
@@ -149,6 +149,16 @@ export function DestinationForm({
                   />
                 </Field>
               </div>
+              {values.latitude !== null && values.longitude !== null && (
+                <a
+                  href={`https://www.google.com/maps?q=${values.latitude},${values.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="chip w-fit transition-colors hover:text-verdigris-bright"
+                >
+                  Open saved coordinates in Google Maps ↗
+                </a>
+              )}
             </Fieldset>
 
             <Fieldset

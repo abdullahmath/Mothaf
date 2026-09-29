@@ -269,9 +269,25 @@ export default async function DestinationPage({ params }: { params: Params }) {
           {page.latitude !== null && page.longitude !== null && (
             <section>
               <h2 className="eyebrow mb-2">{t('destination.locationTitle')}</h2>
-              <p className="readout">
+              <p className="readout mb-4">
                 {page.latitude.toFixed(5)}, {page.longitude.toFixed(5)}
               </p>
+              <a
+                href={`https://www.google.com/maps?q=${page.latitude},${page.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-quiet w-full"
+              >
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path
+                    d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <circle cx="10" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+                {t('destination.openInMaps')}
+              </a>
             </section>
           )}
         </aside>
