@@ -52,6 +52,13 @@ export default async function DestinationPage({ params }: { params: Params }) {
   const origin = env().APP_ORIGIN;
   const pageUrl = `${origin}/${locale}/destinations/${page.slug}`;
 
+  // An editor-supplied link wins; coordinates are the fallback.
+  const mapsHref =
+    page.mapsUrl ??
+    (page.latitude !== null && page.longitude !== null
+      ? `https://www.google.com/maps?q=${page.latitude},${page.longitude}`
+      : null);
+
   return (
     <article>
       <JsonLd
@@ -266,14 +273,16 @@ export default async function DestinationPage({ params }: { params: Params }) {
             </section>
           )}
 
-          {page.latitude !== null && page.longitude !== null && (
+          {mapsHref && (
             <section>
               <h2 className="eyebrow mb-2">{t('destination.locationTitle')}</h2>
-              <p className="readout mb-4">
-                {page.latitude.toFixed(5)}, {page.longitude.toFixed(5)}
-              </p>
+              {page.latitude !== null && page.longitude !== null && (
+                <p className="readout mb-4">
+                  {page.latitude.toFixed(5)}, {page.longitude.toFixed(5)}
+                </p>
+              )}
               <a
-                href={`https://www.google.com/maps?q=${page.latitude},${page.longitude}`}
+                href={mapsHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-quiet w-full"

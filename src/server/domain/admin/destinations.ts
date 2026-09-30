@@ -40,6 +40,42 @@ export const DESTINATION_TRANSLATION_FIELDS = [
   'historicalContext',
 ] as const;
 
+/**
+ * A Google Maps link, as copied from the address bar or the Share button.
+ *
+ * It ends up in a public `href`, so it is held to https and to Google's own
+ * map hosts rather than trusted as "some URL" — an editor pasting the wrong
+ * thing shouldn't be able to point visitors anywhere else, and `javascript:`
+ * can never get through.
+ */
+const MAPS_HOSTS = new Set([
+  'maps.app.goo.gl',
+  'goo.gl',
+  'maps.google.com',
+  'google.com',
+  'www.google.com',
+]);
+
+export const mapsUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((value) => {
+    let url: URL;
+    try {
+      url = new URL(value);
+    } catch {
+      return false;
+    }
+    if (url.protocol !== 'https:' || !MAPS_HOSTS.has(url.hostname)) return false;
+    // google.com and goo.gl host far more than maps.
+    if (url.hostname === 'google.com' || url.hostname === 'www.google.com') {
+      return url.pathname.startsWith('/maps');
+    }
+    if (url.hostname === 'goo.gl') return url.pathname.startsWith('/maps');
+    return true;
+  }, 'Paste a Google Maps link (https://maps.app.goo.gl/… or https://www.google.com/maps/…)');
+
 export const destinationInputSchema = z.object({
   slug: slugSchema,
   defaultLocale: localeCodeSchema,
@@ -56,6 +92,7 @@ export const destinationInputSchema = z.object({
   latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
   longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
   summaryNote: optionalText(500).optional(),
+  mapsUrl: mapsUrlSchema.nullable().optional(),
   /**
    * A bare Sketchfab model id, never a URL. Extracted from either the model's
    * page URL (the last path segment after the slug) or its embed src
@@ -156,6 +193,7 @@ export async function createDestination(
       countryCode: input.countryCode ?? null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
+      mapsUrl: input.mapsUrl ?? null,
       sketchfabModelId: input.sketchfabModelId ?? null,
     })
     .returning({ id: destinations.id });
@@ -219,6 +257,7 @@ export async function updateDestination(
       countryCode: input.countryCode ?? null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
+      mapsUrl: input.mapsUrl ?? null,
       sketchfabModelId: input.sketchfabModelId ?? null,
       updatedAt: new Date(),
     })

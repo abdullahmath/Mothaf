@@ -88,9 +88,13 @@ export default async function DestinationsAdminPage({
                       >
                         {nameOf(destination.translations, destination.slug)}
                       </Link>
-                      {destination.latitude !== null && destination.longitude !== null && (
+                      {(destination.mapsUrl ||
+                        (destination.latitude !== null && destination.longitude !== null)) && (
                         <a
-                          href={`https://www.google.com/maps?q=${destination.latitude},${destination.longitude}`}
+                          href={
+                            destination.mapsUrl ??
+                            `https://www.google.com/maps?q=${destination.latitude},${destination.longitude}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           title={t('destination.locationTitle')}

@@ -53,6 +53,14 @@ export const destinations = pgTable(
     countryCode: varchar('country_code', { length: 2 }),
 
     /**
+     * A Google Maps link for places an editor has no coordinates for. When set
+     * it wins over latitude/longitude for the public "Open in Google Maps"
+     * button. Validated to Google's own map hosts on write; the https check
+     * below keeps a `javascript:` URL out even if a row is inserted directly.
+     */
+    mapsUrl: varchar('maps_url', { length: 500 }),
+
+    /**
      * Optional embedded 3D scan, shown on the destination page beside the
      * tour.
      *
@@ -83,6 +91,7 @@ export const destinations = pgTable(
       'destinations_longitude_range',
       sql`${t.longitude} IS NULL OR (${t.longitude} BETWEEN -180 AND 180)`,
     ),
+    check('destinations_maps_url_https', sql`${t.mapsUrl} IS NULL OR ${t.mapsUrl} LIKE 'https://%'`),
     // Defence in depth alongside the Zod check on write: even a row inserted
     // outside the application (a migration, a console) cannot carry a value
     // that isn't a bare Sketchfab id.

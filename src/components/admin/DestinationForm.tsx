@@ -20,6 +20,7 @@ export type DestinationFormValues = {
   countryCode: string | null;
   latitude: number | null;
   longitude: number | null;
+  mapsUrl: string | null;
   sketchfabModelId: string | null;
   translations: TranslationValues;
 };
@@ -125,7 +126,7 @@ export function DestinationForm({
 
             <Fieldset
               legend="Location"
-              description="Optional. Used for map placement and structured data. Shows a Google Maps button on the public page."
+              description="Optional. Drives the Google Maps button on the public page. Give coordinates, or just paste a Google Maps link below."
             >
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="Country code" name="countryCode" error={fieldError('countryCode')}>
@@ -149,14 +150,31 @@ export function DestinationForm({
                   />
                 </Field>
               </div>
-              {values.latitude !== null && values.longitude !== null && (
+              <Field
+                label="Google Maps link"
+                name="mapsUrl"
+                hint="No coordinates? Open the place in Google Maps, press Share, and paste the link here. If both are filled, this link is the one visitors get."
+                error={fieldError('mapsUrl')}
+              >
+                <TextInput
+                  name="mapsUrl"
+                  defaultValue={values.mapsUrl}
+                  latin
+                  inputMode="url"
+                  placeholder="https://maps.app.goo.gl/…"
+                />
+              </Field>
+              {(values.mapsUrl || (values.latitude !== null && values.longitude !== null)) && (
                 <a
-                  href={`https://www.google.com/maps?q=${values.latitude},${values.longitude}`}
+                  href={
+                    values.mapsUrl ??
+                    `https://www.google.com/maps?q=${values.latitude},${values.longitude}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="chip w-fit transition-colors hover:text-verdigris-bright"
                 >
-                  Open saved coordinates in Google Maps ↗
+                  Open saved location in Google Maps ↗
                 </a>
               )}
             </Fieldset>

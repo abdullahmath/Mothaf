@@ -148,6 +148,7 @@ export async function saveDestinationAction(
     countryCode: nullableField(formData, 'countryCode'),
     latitude: nullableField(formData, 'latitude'),
     longitude: nullableField(formData, 'longitude'),
+    mapsUrl: nullableField(formData, 'mapsUrl'),
     sketchfabModelId: extractSketchfabId(field(formData, 'sketchfabModelId')) ?? null,
   });
   if (!parsed.success) return fail('Please check the highlighted fields.', zodFields(parsed.error));

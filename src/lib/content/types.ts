@@ -113,6 +113,8 @@ export type DestinationPageDTO = {
   latitude: number | null;
   longitude: number | null;
   countryCode: string | null;
+  /** Editor-supplied Google Maps link; preferred over coordinates when set. */
+  mapsUrl: string | null;
   /** Bare Sketchfab model id. `null` when the destination has no 3D scan. */
   sketchfabModelId: string | null;
   tours: TourCardDTO[];

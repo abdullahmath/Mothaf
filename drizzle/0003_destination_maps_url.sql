@@ -1,0 +1,2 @@
+ALTER TABLE "destinations" ADD COLUMN "maps_url" varchar(500);--> statement-breakpoint
+ALTER TABLE "destinations" ADD CONSTRAINT "destinations_maps_url_https" CHECK ("destinations"."maps_url" IS NULL OR "destinations"."maps_url" LIKE 'https://%');
