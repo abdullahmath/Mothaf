@@ -1,13 +1,13 @@
 # Render's free tier sleeps a service after 15 idle minutes, and the next visit
 # waits ~1 minute for a cold start. A visit every 5 minutes keeps it awake.
 #
-# Only 06:00-21:59 UTC (09:00-00:59 Syria): free instance hours are shared by
-# every free service in the workspace (750/month), so 24/7 would starve the
-# others. Widen the cron hours if there is headroom.
+# Runs 24/7. Free instance hours (750/month) are shared by every free
+# service in the workspace, so a second always-on service can run out near
+# month end. Narrow the cron hours if that happens.
 name: keepalive
 on:
   schedule:
-    - cron: '*/5 6-21 * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 jobs:
   ping:
