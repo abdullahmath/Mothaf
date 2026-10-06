@@ -1,0 +1,16 @@
+# Render's free tier sleeps a service after 15 idle minutes, and the next visit
+# waits ~1 minute for a cold start. A visit every 5 minutes keeps it awake.
+#
+# Only 06:00-21:59 UTC (09:00-00:59 Syria): free instance hours are shared by
+# every free service in the workspace (750/month), so 24/7 would starve the
+# others. Widen the cron hours if there is headroom.
+name: keepalive
+on:
+  schedule:
+    - cron: '*/5 6-21 * * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --retry 3 --retry-delay 20 --max-time 90 -o /dev/null https://mothaf.onrender.com/ar
