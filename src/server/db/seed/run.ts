@@ -123,13 +123,23 @@ async function main() {
 
   const db = await getDb();
 
-  // Idempotence: remove the previous seed of this destination. Cascades clear
-  // its tours, scenes, hotspots, POIs and events with it.
   const [previous] = await db
     .select({ id: destinations.id })
     .from(destinations)
     .where(eq(destinations.slug, DESTINATION.slug))
     .limit(1);
+
+  // `npm start` seeds on every boot. Rebuilding an existing destination would
+  // throw away whatever an editor changed on it (cover, tours, events — the
+  // delete below cascades) and orphan a fresh set of placeholder media, so
+  // leave it alone unless a rebuild is asked for.
+  if (previous && process.env.SEED_RESET_DEMO !== 'true') {
+    console.log(`· ${DESTINATION.slug} already exists — leaving it (SEED_RESET_DEMO=true rebuilds it)`);
+    return;
+  }
+
+  // Explicit rebuild: remove the previous seed. Cascades clear its tours,
+  // scenes, hotspots, POIs and events with it.
   if (previous) {
     await db.delete(destinations).where(eq(destinations.id, previous.id));
     console.log('· removed previous seed of this destination');
